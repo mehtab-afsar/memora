@@ -173,6 +173,37 @@ export const contradictions = pgTable("contradictions", {
 ]);
 
 // ---------------------------------------------------------------------------
+// Experience Memory — append-only log of task attempts and outcomes.
+// Deliberately not modeled like `memories`: no dedup decision engine, no
+// status lifecycle, no versioning, no evidence table. Two attempts at the
+// same task are two valid rows, not a conflict. Scoped by project+environment
+// only (no end_user_id) — this is what the *agent* learned doing a task, not
+// a fact about a specific end-user.
+// ---------------------------------------------------------------------------
+
+export const experienceOutcomeEnum = pgEnum("experience_outcome", ["success", "failure"]);
+
+export const experiences = pgTable("experiences", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  environmentId: uuid("environment_id").notNull().references(() => environments.id, { onDelete: "cascade" }),
+  task: text("task").notNull(),
+  action: text("action").notNull(),
+  context: text("context"),
+  outcome: experienceOutcomeEnum("outcome").notNull(),
+  cause: text("cause"),
+  resolution: text("resolution"),
+  lesson: text("lesson").notNull(),
+  embedding: vector("embedding", { dimensions: EMBEDDING_DIMENSIONS }),
+  sourceType: text("source_type").notNull(),
+  sourceId: text("source_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("experiences_scope_idx").on(table.projectId, table.environmentId),
+  index("experiences_embedding_idx").using("hnsw", table.embedding.op("vector_cosine_ops")),
+]);
+
+// ---------------------------------------------------------------------------
 // Relations (for query ergonomics)
 // ---------------------------------------------------------------------------
 

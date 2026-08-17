@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Database,
+  Lightbulb,
   FlaskConical,
   KeyRound,
   Layers,
@@ -43,6 +44,7 @@ export function DashboardSidebar({
   const primaryNav = [
     { label: "Overview", href: `${base}/overview`, icon: LayoutDashboard },
     { label: "Memories", href: `${base}/memories`, icon: Database },
+    { label: "Experiences", href: `${base}/experiences`, icon: Lightbulb },
     { label: "Playground", href: `${base}/playground`, icon: FlaskConical },
   ];
 

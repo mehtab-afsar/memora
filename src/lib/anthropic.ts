@@ -223,3 +223,107 @@ export async function verifyMemory(input: {
 }): Promise<VerifyResult> {
   return callTool<VerifyResult>(VERIFY_SYSTEM_PROMPT, JSON.stringify(input, null, 2), verifyMemoryTool);
 }
+
+// ---------------------------------------------------------------------------
+// generateLesson() — Experience Memory: summarize a task attempt into one
+// generalizable takeaway when the caller doesn't supply one directly.
+// ---------------------------------------------------------------------------
+
+const generateLessonTool: Tool = {
+  name: "generate_lesson",
+  description: "Summarize a task attempt into one crisp, generalizable lesson.",
+  input_schema: {
+    type: "object",
+    properties: {
+      lesson: { type: "string" },
+    },
+    required: ["lesson"],
+    additionalProperties: false,
+  },
+  strict: true,
+};
+
+const GENERATE_LESSON_SYSTEM_PROMPT = `You summarize a single task attempt into one crisp, generalizable lesson — the kind of thing worth remembering before attempting a similar task again.
+
+Focus on the generalizable cause-and-effect, not a restatement of what happened. For a failure with a cause and resolution, the lesson should capture the fix in a way that transfers to future attempts (e.g. "Deployment requires DATABASE_URL to be set" rather than "The deployment failed and was then fixed"). For a success, capture what specifically worked and is worth repeating.
+
+One sentence. No preamble.`;
+
+export async function generateLesson(input: {
+  task: string;
+  action: string;
+  outcome: "success" | "failure";
+  cause?: string;
+  resolution?: string;
+}): Promise<string> {
+  const result = await callTool<{ lesson: string }>(
+    GENERATE_LESSON_SYSTEM_PROMPT,
+    JSON.stringify(input, null, 2),
+    generateLessonTool
+  );
+  return result.lesson;
+}
+
+// ---------------------------------------------------------------------------
+// synthesizeRecommendation() — Experience Memory: given a new task and the
+// most relevant past attempts, recommend what to do — grounded only in the
+// retrieved experiences, never called when there are none.
+// ---------------------------------------------------------------------------
+
+export type ExperienceForRecommendation = {
+  id: string;
+  task: string;
+  action: string;
+  outcome: "success" | "failure";
+  cause: string | null;
+  resolution: string | null;
+  lesson: string;
+};
+
+export type Recommendation = {
+  recommendation: string;
+  confidence: number;
+  reasoning: string;
+  supporting_experience_ids: string[];
+};
+
+const synthesizeRecommendationTool: Tool = {
+  name: "synthesize_recommendation",
+  description: "Recommend an approach for a new task, grounded in past experience attempts.",
+  input_schema: {
+    type: "object",
+    properties: {
+      recommendation: { type: "string" },
+      confidence: { type: "number" },
+      reasoning: { type: "string" },
+      supporting_experience_ids: { type: "array", items: { type: "string" } },
+    },
+    required: ["recommendation", "confidence", "reasoning", "supporting_experience_ids"],
+    additionalProperties: false,
+  },
+  strict: true,
+};
+
+const SYNTHESIZE_RECOMMENDATION_SYSTEM_PROMPT = `You are given a new task and a set of past attempts at similar tasks (each with what was done, whether it succeeded or failed, and — for failures — the cause and resolution if known).
+
+Recommend what to do for the new task, grounded ONLY in the given experiences:
+- If a past approach succeeded, recommend repeating it.
+- If a past approach failed and no resolution is known, recommend avoiding it and explain why.
+- If a past approach failed but a resolution is known, recommend the corrected approach (the original action plus the fix), not the raw failing action.
+- If the past experiences are mixed or only weakly related to the new task, say so plainly in the reasoning and lower your confidence rather than forcing a confident-sounding answer.
+
+confidence (0-1) should reflect how directly the past experiences apply — high when a near-identical task has a clear successful outcome, low when the match is loose or the evidence is thin.
+
+supporting_experience_ids must list only the ids of experiences you actually relied on, not all of the ones you were given.`;
+
+export async function synthesizeRecommendation(
+  task: string,
+  pastExperiences: ExperienceForRecommendation[]
+): Promise<Recommendation> {
+  const userMessage = `New task:\n${task}\n\nPast experiences:\n${JSON.stringify(pastExperiences, null, 2)}`;
+  return callTool<Recommendation>(
+    SYNTHESIZE_RECOMMENDATION_SYSTEM_PROMPT,
+    userMessage,
+    synthesizeRecommendationTool
+  );
+}
