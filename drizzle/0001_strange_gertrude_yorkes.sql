@@ -1,0 +1,1 @@
+ALTER TABLE "memory_evidence" ADD COLUMN "reasoning" text;

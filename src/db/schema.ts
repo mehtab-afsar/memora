@@ -1,0 +1,216 @@
+import {
+  pgTable,
+  uuid,
+  text,
+  timestamp,
+  real,
+  jsonb,
+  pgEnum,
+  vector,
+  index,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+
+// ---------------------------------------------------------------------------
+// Dashboard identity (humans logging into the web UI)
+// ---------------------------------------------------------------------------
+
+export const organizations = pgTable("organizations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull(),
+  passwordHash: text("password_hash").notNull(),
+  name: text("name"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("users_email_idx").on(table.email),
+]);
+
+export const membershipRoleEnum = pgEnum("membership_role", ["owner"]);
+
+export const memberships = pgTable("memberships", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  role: membershipRoleEnum("role").notNull().default("owner"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("memberships_org_user_idx").on(table.orgId, table.userId),
+]);
+
+// Auth.js Credentials provider only supports JWT sessions (a documented
+// Auth.js limitation), so no adapter/session/account tables are needed here
+// — auth state lives entirely in a signed JWT cookie, `users` is queried
+// directly from the Credentials `authorize()` callback.
+
+// ---------------------------------------------------------------------------
+// Org -> Project -> Environment -> API key
+// ---------------------------------------------------------------------------
+
+export const projects = pgTable("projects", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const environments = pgTable("environments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  name: text("name").notNull(), // e.g. 'development' | 'production'
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const apiKeys = pgTable("api_keys", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  environmentId: uuid("environment_id").notNull().references(() => environments.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  keyPrefix: text("key_prefix").notNull(), // shown in UI, e.g. 'sk_live_ab12'
+  keyHash: text("key_hash").notNull(), // sha256(full key)
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+}, (table) => [
+  uniqueIndex("api_keys_key_hash_idx").on(table.keyHash),
+]);
+
+// ---------------------------------------------------------------------------
+// Memory Intelligence Engine
+// ---------------------------------------------------------------------------
+
+export const memoryTypeEnum = pgEnum("memory_type", [
+  "preference",
+  "fact",
+  "goal",
+  "relationship",
+  "event",
+  "instruction",
+  "decision",
+  "context",
+]);
+
+export const memoryStatusEnum = pgEnum("memory_status", [
+  "active",
+  "stale",
+  "superseded",
+  "archived",
+  "flagged",
+]);
+
+export const evidenceEventTypeEnum = pgEnum("evidence_event_type", [
+  "extracted",
+  "reconfirmed",
+  "updated",
+  "verified",
+]);
+
+export const contradictionStatusEnum = pgEnum("contradiction_status", ["detected", "resolved"]);
+export const contradictionResolutionEnum = pgEnum("contradiction_resolution", [
+  "kept_a",
+  "kept_b",
+  "merged",
+  "ignored",
+]);
+
+// Voyage voyage-3 embeddings are 1024-dimensional.
+export const EMBEDDING_DIMENSIONS = 1024;
+
+export const memories = pgTable("memories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  environmentId: uuid("environment_id").notNull().references(() => environments.id, { onDelete: "cascade" }),
+  endUserId: text("end_user_id").notNull(), // opaque id from the calling application, not a users.id fk
+  content: text("content").notNull(),
+  type: memoryTypeEnum("type").notNull(),
+  confidence: real("confidence").notNull(),
+  importance: real("importance").notNull(),
+  status: memoryStatusEnum("status").notNull().default("active"),
+  sourceType: text("source_type").notNull(),
+  sourceId: text("source_id"),
+  embedding: vector("embedding", { dimensions: EMBEDDING_DIMENSIONS }),
+  supersedesId: uuid("supersedes_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  lastConfirmedAt: timestamp("last_confirmed_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("memories_scope_idx").on(table.projectId, table.environmentId, table.endUserId, table.status),
+  index("memories_embedding_idx").using("hnsw", table.embedding.op("vector_cosine_ops")),
+]);
+
+export const memoryEvidence = pgTable("memory_evidence", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  memoryId: uuid("memory_id").notNull().references(() => memories.id, { onDelete: "cascade" }),
+  sourceType: text("source_type").notNull(),
+  sourceId: text("source_id"),
+  excerpt: text("excerpt").notNull(),
+  eventType: evidenceEventTypeEnum("event_type").notNull(),
+  // Claude's stated reasoning for an update/merge decision — why this version replaced the last.
+  reasoning: text("reasoning"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("memory_evidence_memory_id_idx").on(table.memoryId),
+]);
+
+export const contradictions = pgTable("contradictions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  memoryIdA: uuid("memory_id_a").notNull().references(() => memories.id, { onDelete: "cascade" }),
+  memoryIdB: uuid("memory_id_b").notNull().references(() => memories.id, { onDelete: "cascade" }),
+  status: contradictionStatusEnum("status").notNull().default("detected"),
+  resolution: contradictionResolutionEnum("resolution"),
+  reasoning: text("reasoning").notNull(),
+  detectedAt: timestamp("detected_at", { withTimezone: true }).notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+}, (table) => [
+  index("contradictions_project_id_idx").on(table.projectId),
+]);
+
+// ---------------------------------------------------------------------------
+// Relations (for query ergonomics)
+// ---------------------------------------------------------------------------
+
+export const organizationsRelations = relations(organizations, ({ many }) => ({
+  memberships: many(memberships),
+  projects: many(projects),
+}));
+
+export const usersRelations = relations(users, ({ many }) => ({
+  memberships: many(memberships),
+}));
+
+export const membershipsRelations = relations(memberships, ({ one }) => ({
+  org: one(organizations, { fields: [memberships.orgId], references: [organizations.id] }),
+  user: one(users, { fields: [memberships.userId], references: [users.id] }),
+}));
+
+export const projectsRelations = relations(projects, ({ one, many }) => ({
+  org: one(organizations, { fields: [projects.orgId], references: [organizations.id] }),
+  environments: many(environments),
+  memories: many(memories),
+}));
+
+export const environmentsRelations = relations(environments, ({ one, many }) => ({
+  project: one(projects, { fields: [environments.projectId], references: [projects.id] }),
+  apiKeys: many(apiKeys),
+}));
+
+export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
+  environment: one(environments, { fields: [apiKeys.environmentId], references: [environments.id] }),
+}));
+
+export const memoriesRelations = relations(memories, ({ one, many }) => ({
+  project: one(projects, { fields: [memories.projectId], references: [projects.id] }),
+  environment: one(environments, { fields: [memories.environmentId], references: [environments.id] }),
+  evidence: many(memoryEvidence),
+}));
+
+export const memoryEvidenceRelations = relations(memoryEvidence, ({ one }) => ({
+  memory: one(memories, { fields: [memoryEvidence.memoryId], references: [memories.id] }),
+}));
