@@ -4,6 +4,7 @@ import {
   text,
   timestamp,
   real,
+  integer,
   jsonb,
   pgEnum,
   vector,
@@ -201,6 +202,31 @@ export const experiences = pgTable("experiences", {
 }, (table) => [
   index("experiences_scope_idx").on(table.projectId, table.environmentId),
   index("experiences_embedding_idx").using("hnsw", table.embedding.op("vector_cosine_ops")),
+]);
+
+// ---------------------------------------------------------------------------
+// Usage metering — every Claude/Voyage call, logged before any billing exists,
+// so tier/pricing decisions later come from real consumption, not guesses.
+// ---------------------------------------------------------------------------
+
+export const usageSourceEnum = pgEnum("usage_source", ["api", "dashboard"]);
+export const usageProviderEnum = pgEnum("usage_provider", ["anthropic", "voyage"]);
+
+export const usageEvents = pgTable("usage_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  environmentId: uuid("environment_id").notNull().references(() => environments.id, { onDelete: "cascade" }),
+  apiKeyId: uuid("api_key_id").references(() => apiKeys.id, { onDelete: "set null" }),
+  source: usageSourceEnum("source").notNull(),
+  provider: usageProviderEnum("provider").notNull(),
+  operation: text("operation").notNull(), // Claude tool name, or 'document'/'query' for Voyage
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  totalTokens: integer("total_tokens"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("usage_events_project_created_idx").on(table.projectId, table.createdAt),
+  index("usage_events_api_key_idx").on(table.apiKeyId),
 ]);
 
 // ---------------------------------------------------------------------------

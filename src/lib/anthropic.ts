@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Tool } from "@anthropic-ai/sdk/resources/messages";
 import { MEMORY_TYPES, type MemoryType } from "@/lib/memory-types";
+import { recordUsage } from "@/lib/usage-tracking";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -14,6 +15,13 @@ async function callTool<T>(system: string, userMessage: string, tool: Tool): Pro
     messages: [{ role: "user", content: userMessage }],
     tools: [tool],
     tool_choice: { type: "tool", name: tool.name },
+  });
+
+  recordUsage({
+    provider: "anthropic",
+    operation: tool.name,
+    inputTokens: response.usage.input_tokens,
+    outputTokens: response.usage.output_tokens,
   });
 
   const toolUse = response.content.find((block) => block.type === "tool_use");

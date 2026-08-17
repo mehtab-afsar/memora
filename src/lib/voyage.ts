@@ -1,3 +1,5 @@
+import { recordUsage } from "@/lib/usage-tracking";
+
 const VOYAGE_API_URL = "https://api.voyageai.com/v1/embeddings";
 const VOYAGE_MODEL = "voyage-3";
 export const EMBEDDING_DIMENSIONS = 1024;
@@ -6,6 +8,7 @@ type VoyageInputType = "document" | "query";
 
 type VoyageEmbeddingsResponse = {
   data: Array<{ embedding: number[]; index: number }>;
+  usage?: { total_tokens: number };
 };
 
 async function embed(text: string, inputType: VoyageInputType): Promise<number[]> {
@@ -29,6 +32,9 @@ async function embed(text: string, inputType: VoyageInputType): Promise<number[]
   }
 
   const json = (await response.json()) as VoyageEmbeddingsResponse;
+
+  recordUsage({ provider: "voyage", operation: inputType, totalTokens: json.usage?.total_tokens });
+
   const embedding = json.data[0]?.embedding;
   if (!embedding) {
     throw new Error("Voyage embeddings response contained no embedding");

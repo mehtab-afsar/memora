@@ -11,6 +11,7 @@ import {
   type ExperienceRecallResult,
   type RecommendationResult,
 } from "@/lib/experience-engine";
+import { withUsageTracking } from "@/lib/usage-tracking";
 
 async function resolveEnvironmentScope(orgId: string, projectId: string, environmentId: string) {
   const { project } = await assertProjectAccess(orgId, projectId);
@@ -26,7 +27,9 @@ export async function recordExperienceAction(
   input: Omit<RecordExperienceInput, "sourceType" | "sourceId">
 ) {
   const scope = await resolveEnvironmentScope(orgId, projectId, environmentId);
-  const experience = await recordExperience(scope, { ...input, sourceType: "dashboard" });
+  const experience = await withUsageTracking({ ...scope, source: "dashboard" }, () =>
+    recordExperience(scope, { ...input, sourceType: "dashboard" })
+  );
   revalidatePath(`/${orgId}/${projectId}/experiences`);
   return experience;
 }
@@ -39,7 +42,7 @@ export async function runExperienceRecallAction(
   topK: number
 ): Promise<ExperienceRecallResult[]> {
   const scope = await resolveEnvironmentScope(orgId, projectId, environmentId);
-  return recallExperiences(scope, query, topK);
+  return withUsageTracking({ ...scope, source: "dashboard" }, () => recallExperiences(scope, query, topK));
 }
 
 export async function getRecommendationAction(
@@ -49,5 +52,5 @@ export async function getRecommendationAction(
   task: string
 ): Promise<RecommendationResult> {
   const scope = await resolveEnvironmentScope(orgId, projectId, environmentId);
-  return recommendForTask(scope, task);
+  return withUsageTracking({ ...scope, source: "dashboard" }, () => recommendForTask(scope, task));
 }

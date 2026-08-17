@@ -2,6 +2,7 @@ import { eq, isNull, and } from "drizzle-orm";
 import { db } from "@/db";
 import { apiKeys, environments, projects } from "@/db/schema";
 import { hashApiKey } from "@/lib/api-keys";
+import { withUsageTracking } from "@/lib/usage-tracking";
 
 export type ApiKeyContext = {
   orgId: string;
@@ -46,5 +47,8 @@ export async function withApiKey(
   if (!ctx) {
     return Response.json({ error: "Invalid or missing API key" }, { status: 401 });
   }
-  return handler(ctx);
+  return withUsageTracking(
+    { projectId: ctx.projectId, environmentId: ctx.environmentId, apiKeyId: ctx.apiKeyId, source: "api" },
+    () => handler(ctx)
+  );
 }

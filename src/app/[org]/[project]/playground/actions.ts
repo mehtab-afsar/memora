@@ -3,6 +3,7 @@
 import { assertProjectAccess } from "@/lib/dashboard-auth";
 import { getEnvironmentInProject } from "@/lib/org";
 import { recall, type RecallResult } from "@/lib/memory-engine";
+import { withUsageTracking } from "@/lib/usage-tracking";
 
 export async function runRecallAction(
   orgId: string,
@@ -15,11 +16,15 @@ export async function runRecallAction(
   const environment = await getEnvironmentInProject(project.id, environmentId);
   if (!environment) throw new Error("Environment not found");
 
-  return recall({
-    projectId: project.id,
-    environmentId: environment.id,
-    endUserId: input.endUserId,
-    query: input.query,
-    topK: input.topK,
-  });
+  return withUsageTracking(
+    { projectId: project.id, environmentId: environment.id, source: "dashboard" },
+    () =>
+      recall({
+        projectId: project.id,
+        environmentId: environment.id,
+        endUserId: input.endUserId,
+        query: input.query,
+        topK: input.topK,
+      })
+  );
 }

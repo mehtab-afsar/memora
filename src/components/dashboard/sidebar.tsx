@@ -10,6 +10,7 @@ import {
   KeyRound,
   Layers,
   Building2,
+  Activity,
   ChevronsUpDown,
   Check,
   Brain,
@@ -51,6 +52,7 @@ export function DashboardSidebar({
   const settingsNav = [
     { label: "API Keys", href: `${base}/settings/api-keys`, icon: KeyRound },
     { label: "Environments", href: `${base}/settings/environments`, icon: Layers },
+    { label: "Usage", href: `${base}/settings/usage`, icon: Activity },
     { label: "Organization", href: `/${org.id}/settings`, icon: Building2 },
   ];
 
