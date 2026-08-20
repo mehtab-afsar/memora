@@ -1,9 +1,25 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Link from "next/link";
+import { Brain, Check, Copy } from "lucide-react";
 import { onboardingAction, type OnboardingState } from "./actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const initialState: OnboardingState = {};
+
+function OnboardingHeader() {
+  return (
+    <header className="flex h-16 items-center px-6">
+      <Link href="/" className="flex items-center gap-2">
+        <Brain className="size-5 text-primary" strokeWidth={2.25} />
+        <span className="text-sm font-semibold tracking-tight text-foreground">MEMORA</span>
+      </Link>
+    </header>
+  );
+}
 
 export default function OnboardingPage() {
   const [state, formAction, pending] = useActionState(onboardingAction, initialState);
@@ -11,63 +27,72 @@ export default function OnboardingPage() {
 
   if (state.result) {
     const { apiKey, orgName, projectName, environmentName } = state.result;
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     return (
-      <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-6 px-6">
-        <div>
-          <h1 className="text-xl font-semibold">You&apos;re set up</h1>
-          <p className="text-sm text-gray-500">
-            Org <strong>{orgName}</strong>, project <strong>{projectName}</strong>, environment{" "}
-            <strong>{environmentName}</strong>.
-          </p>
-        </div>
-        <div className="rounded border p-4">
-          <p className="mb-2 text-sm font-medium">Your API key (shown once — store it now)</p>
-          <code className="block break-all rounded bg-gray-100 px-3 py-2 text-sm">{apiKey}</code>
-          <button
-            type="button"
-            onClick={() => {
-              void navigator.clipboard.writeText(apiKey);
-              setCopied(true);
-            }}
-            className="mt-3 rounded border px-3 py-1.5 text-sm"
-          >
-            {copied ? "Copied" : "Copy key"}
-          </button>
-        </div>
-        <div className="rounded border p-4 text-sm">
-          <p className="mb-2 font-medium">Try it</p>
-          <pre className="overflow-x-auto rounded bg-gray-100 p-3 text-xs">
-{`curl -H "Authorization: Bearer ${apiKey}" http://localhost:3000/api/v1/whoami`}
-          </pre>
-        </div>
-      </main>
+      <div className="flex min-h-screen flex-col bg-background">
+        <OnboardingHeader />
+        <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center gap-6 px-6 pb-24">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">You&apos;re set up</h1>
+            <p className="text-sm text-muted-foreground">
+              Org <strong className="text-foreground">{orgName}</strong>, project{" "}
+              <strong className="text-foreground">{projectName}</strong>, environment{" "}
+              <strong className="text-foreground">{environmentName}</strong>.
+            </p>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="mb-2 text-sm font-medium text-foreground">Your API key (shown once — store it now)</p>
+            <code className="block break-all rounded-md bg-muted px-3 py-2 font-mono text-sm text-foreground">
+              {apiKey}
+            </code>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3 gap-1.5"
+              onClick={() => {
+                void navigator.clipboard.writeText(apiKey);
+                setCopied(true);
+              }}
+            >
+              {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+              {copied ? "Copied" : "Copy key"}
+            </Button>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4 text-sm">
+            <p className="mb-2 font-medium text-foreground">Try it</p>
+            <pre className="overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs text-foreground">
+              {`curl -H "Authorization: Bearer ${apiKey}" ${origin}/api/v1/whoami`}
+            </pre>
+          </div>
+        </main>
+      </div>
     );
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6">
-      <div>
-        <h1 className="text-xl font-semibold">Set up your workspace</h1>
-        <p className="text-sm text-gray-500">Create an organization and your first project.</p>
-      </div>
-      <form action={formAction} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm">
-          Organization name
-          <input name="orgName" type="text" required className="rounded border px-3 py-2" />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Project name
-          <input name="projectName" type="text" required defaultValue="Default project" className="rounded border px-3 py-2" />
-        </label>
-        {state.error && <p className="text-sm text-red-600">{state.error}</p>}
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded bg-black px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
-          {pending ? "Creating..." : "Create workspace"}
-        </button>
-      </form>
-    </main>
+    <div className="flex min-h-screen flex-col bg-background">
+      <OnboardingHeader />
+      <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-6 pb-24">
+        <div>
+          <h1 className="text-xl font-semibold text-foreground">Set up your workspace</h1>
+          <p className="text-sm text-muted-foreground">Create an organization and your first project.</p>
+        </div>
+        <form action={formAction} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="orgName">Organization name</Label>
+            <Input id="orgName" name="orgName" type="text" required />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="projectName">Project name</Label>
+            <Input id="projectName" name="projectName" type="text" required defaultValue="Default project" />
+          </div>
+          {state.error && <p className="text-sm text-destructive">{state.error}</p>}
+          <Button type="submit" disabled={pending} className="mt-1">
+            {pending ? "Creating..." : "Create workspace"}
+          </Button>
+        </form>
+      </main>
+    </div>
   );
 }
