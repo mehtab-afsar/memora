@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Brain } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { requireUser } from "@/lib/session";
 import { getMembershipForUser, getFirstProjectForOrg } from "@/lib/org";
 import { OrgSettingsForm } from "@/components/dashboard/org-settings-form";
+import { BrandMark } from "@/components/brand-mark";
 
 export default async function OrgSettingsPage({ params }: { params: Promise<{ org: string }> }) {
   const { org: orgId } = await params;
@@ -18,7 +19,7 @@ export default async function OrgSettingsPage({ params }: { params: Promise<{ or
     <div className="min-h-screen bg-background">
       <header className="flex h-16 items-center gap-4 border-b border-border px-6">
         <div className="flex items-center gap-2">
-          <Brain className="size-5 text-primary" strokeWidth={2.25} />
+          <BrandMark className="size-5 text-primary" />
           <span className="text-sm font-semibold tracking-tight text-foreground">MEMORA</span>
         </div>
         {project && (

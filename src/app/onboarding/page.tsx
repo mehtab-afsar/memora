@@ -2,11 +2,12 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { Brain, Check, Copy } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { onboardingAction, type OnboardingState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BrandMark } from "@/components/brand-mark";
 
 const initialState: OnboardingState = {};
 
@@ -14,7 +15,7 @@ function OnboardingHeader() {
   return (
     <header className="flex h-16 items-center px-6">
       <Link href="/" className="flex items-center gap-2">
-        <Brain className="size-5 text-primary" strokeWidth={2.25} />
+        <BrandMark className="size-5 text-primary" />
         <span className="text-sm font-semibold tracking-tight text-foreground">MEMORA</span>
       </Link>
     </header>

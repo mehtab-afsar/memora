@@ -2,11 +2,11 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { Brain } from "lucide-react";
 import { loginAction, type LoginState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BrandMark } from "@/components/brand-mark";
 
 const initialState: LoginState = {};
 
@@ -17,7 +17,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <header className="flex h-16 items-center px-6">
         <Link href="/" className="flex items-center gap-2">
-          <Brain className="size-5 text-primary" strokeWidth={2.25} />
+          <BrandMark className="size-5 text-primary" />
           <span className="text-sm font-semibold tracking-tight text-foreground">MEMORA</span>
         </Link>
       </header>

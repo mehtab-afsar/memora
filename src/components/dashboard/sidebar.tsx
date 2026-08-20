@@ -13,10 +13,10 @@ import {
   Activity,
   ChevronsUpDown,
   Check,
-  Brain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { BrandMark } from "@/components/brand-mark";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,7 +61,7 @@ export function DashboardSidebar({
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex">
       <div className="flex h-16 items-center gap-2 px-5">
-        <Brain className="size-5 text-primary" strokeWidth={2.25} />
+        <BrandMark className="size-5 text-primary" />
         <span className="text-sm font-semibold tracking-tight text-sidebar-foreground">MEMORA</span>
       </div>
 

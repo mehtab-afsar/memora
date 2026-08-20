@@ -112,6 +112,7 @@
   --type-8: #e34948;
   --viz-grid: #e1e0d9;
   --viz-axis: #c3c2b7;
+  --brand-accent: var(--primary);
 }
 
 .dark {
@@ -161,6 +162,7 @@
   --type-8: #e66767;
   --viz-grid: #2c2c2a;
   --viz-axis: #383835;
+  --brand-accent: var(--primary);
 }
 
 @layer base {
