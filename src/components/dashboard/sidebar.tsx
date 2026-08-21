@@ -17,6 +17,7 @@ import {
   Menu,
   LogOut,
   User as UserIcon,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,7 @@ function getNavSections(org: Org, project: Project) {
       { label: "API Keys", href: `${base}/settings/api-keys`, icon: KeyRound },
       { label: "Environments", href: `${base}/settings/environments`, icon: Layers },
       { label: "Usage", href: `${base}/settings/usage`, icon: Activity },
+      { label: "Billing", href: `/${org.id}/settings/billing`, icon: CreditCard },
       { label: "Organization", href: `/${org.id}/settings`, icon: Building2 },
     ],
   };

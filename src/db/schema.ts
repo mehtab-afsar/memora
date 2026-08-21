@@ -26,8 +26,20 @@ export const organizations = pgTable("organizations", {
   // Limits live in src/lib/plans.ts; this is the only thing persisted, so a
   // plan's numbers can change without a migration.
   plan: planEnum("plan").notNull().default("free"),
+  // Stripe is the source of truth for whether a subscription is live; these are
+  // the handles we need to talk to it. `plan` is a cached projection of the
+  // subscription, updated by the webhook — never set by the checkout redirect,
+  // which the customer controls and can simply not follow.
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  // What Stripe last told us. A subscription that is `past_due` still has a
+  // plan; one that is `canceled` falls back to free.
+  subscriptionStatus: text("subscription_status"),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  uniqueIndex("organizations_stripe_customer_idx").on(table.stripeCustomerId),
+]);
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),

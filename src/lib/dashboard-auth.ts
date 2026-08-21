@@ -9,6 +9,15 @@ import { getMembershipForUser, getProjectInOrg } from "@/lib/org";
  * re-validated against the *current* session on every call, not trusted
  * because the page that rendered the button already checked once.
  */
+export async function assertOrgAccess(orgId: string) {
+  const user = await requireUser();
+
+  const membership = await getMembershipForUser(user.id, orgId);
+  if (!membership) notFound();
+
+  return { user, org: membership.org };
+}
+
 export async function assertProjectAccess(orgId: string, projectId: string) {
   const user = await requireUser();
 
