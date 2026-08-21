@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { recordExperienceAction } from "@/app/[org]/[project]/experiences/actions";
+import { recordExperienceAction } from "@/features/experiences/actions/experiences-actions";
 
 export function RecordExperienceDialog({
   orgId,

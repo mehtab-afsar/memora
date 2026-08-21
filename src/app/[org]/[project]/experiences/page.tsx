@@ -1,9 +1,13 @@
+import { Lightbulb } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getProjectInOrg, resolveCurrentEnvironment } from "@/lib/org";
 import { listExperiences } from "@/lib/experience-engine";
-import { RecordExperienceDialog } from "@/components/dashboard/record-experience-dialog";
-import { ExperienceRecallForm } from "@/components/dashboard/experience-recall-form";
-import { OutcomeBadge } from "@/components/dashboard/outcome-badge";
+import { RecordExperienceDialog } from "@/features/experiences/components/record-experience-dialog";
+import { ExperienceRecallForm } from "@/features/experiences/components/experience-recall-form";
+import { OutcomeBadge } from "@/features/experiences/components/outcome-badge";
+import { EmptyState } from "@/components/shared/empty-state";
+import { PageHeader } from "@/components/shared/page-header";
+import { Card, CardHeader, CardTitle, CardAction, CardContent } from "@/components/ui/card";
 import { formatRelativeTime } from "@/lib/format";
 
 type Experience = Awaited<ReturnType<typeof listExperiences>>["experiences"][number];
@@ -52,55 +56,58 @@ export default async function ExperiencesPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">Experiences</h1>
-          <p className="text-sm text-muted-foreground">
-            What the agent has learned from past attempts in {environment.name} — {total} recorded.
-          </p>
-        </div>
-        <RecordExperienceDialog orgId={orgId} projectId={projectId} environmentId={environment.id} />
-      </div>
+      <PageHeader
+        icon={Lightbulb}
+        title="Experiences"
+        description={`What the agent has learned from past attempts in ${environment.name} — ${total} recorded.`}
+        actions={<RecordExperienceDialog orgId={orgId} projectId={projectId} environmentId={environment.id} />}
+      />
 
       <ExperienceRecallForm orgId={orgId} projectId={projectId} environmentId={environment.id} />
 
       <div>
         <h2 className="mb-3 text-sm font-medium text-foreground">All experiences</h2>
         {groups.length === 0 ? (
-          <div className="flex flex-col items-center gap-1 rounded-lg border border-dashed border-border py-16 text-center">
-            <p className="text-sm font-medium text-foreground">No experiences recorded yet</p>
-            <p className="text-sm text-muted-foreground">Record one above, or send some via the record() API.</p>
-          </div>
+          <EmptyState
+            icon={Lightbulb}
+            title="No experiences recorded yet"
+            description="Record one above, or send some via the record() API."
+            className="py-16"
+          />
         ) : (
           <div className="flex flex-col gap-4">
             {groups.map((group) => (
-              <div key={group.taskLabel} className="rounded-lg border border-border bg-card">
-                <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                  <p className="text-sm font-medium text-foreground">{group.taskLabel}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {group.attempts.length} attempt{group.attempts.length === 1 ? "" : "s"}
-                    {group.attempts.length > 1 &&
-                      ` — ${group.failureCount} failed, ${group.successCount} succeeded`}
-                  </p>
-                </div>
-                <ul className="divide-y divide-border">
-                  {group.attempts.map((exp, i) => (
-                    <li key={exp.id} className="px-4 py-3">
-                      <div className="flex items-start justify-between gap-4">
-                        <p className="text-sm text-foreground">
-                          {group.attempts.length > 1 && (
-                            <span className="mr-1.5 text-xs text-muted-foreground">#{i + 1}</span>
-                          )}
-                          {exp.action}
-                        </p>
-                        <OutcomeBadge outcome={exp.outcome} />
-                      </div>
-                      <p className="mt-1.5 text-sm text-muted-foreground">{exp.lesson}</p>
-                      <p className="mt-1.5 text-xs text-muted-foreground">{formatRelativeTime(exp.createdAt)}</p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <Card key={group.taskLabel}>
+                <CardHeader className="border-b border-border">
+                  <CardTitle>{group.taskLabel}</CardTitle>
+                  <CardAction>
+                    <span className="text-xs text-muted-foreground">
+                      {group.attempts.length} attempt{group.attempts.length === 1 ? "" : "s"}
+                      {group.attempts.length > 1 &&
+                        ` — ${group.failureCount} failed, ${group.successCount} succeeded`}
+                    </span>
+                  </CardAction>
+                </CardHeader>
+                <CardContent className="px-0">
+                  <ul className="divide-y divide-border">
+                    {group.attempts.map((exp, i) => (
+                      <li key={exp.id} className="px-4 py-3">
+                        <div className="flex items-start justify-between gap-4">
+                          <p className="text-sm text-foreground">
+                            {group.attempts.length > 1 && (
+                              <span className="mr-1.5 text-xs text-muted-foreground">#{i + 1}</span>
+                            )}
+                            {exp.action}
+                          </p>
+                          <OutcomeBadge outcome={exp.outcome} />
+                        </div>
+                        <p className="mt-1.5 text-sm text-muted-foreground">{exp.lesson}</p>
+                        <p className="mt-1.5 text-xs text-muted-foreground">{formatRelativeTime(exp.createdAt)}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}

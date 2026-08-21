@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { createEnvironmentAction } from "@/app/[org]/[project]/settings/environments/actions";
+import { createEnvironmentAction } from "@/features/environments/actions/environments-actions";
 import { formatRelativeTime } from "@/lib/format";
 
 type Environment = { id: string; name: string; createdAt: Date };

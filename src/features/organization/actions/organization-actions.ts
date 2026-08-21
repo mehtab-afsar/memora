@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
-import { requireUser } from "@/lib/session";
+import { requireUser } from "@/features/auth/lib/session";
 import { getMembershipForUser, renameOrg } from "@/lib/org";
 
 export async function renameOrgAction(orgId: string, name: string) {

@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { SearchX } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TypeBadge } from "@/components/dashboard/type-badge";
-import { StatusBadge } from "@/components/dashboard/status-badge";
-import { ReconcilingChip } from "@/components/dashboard/reconciling-chip";
-import { ConfidenceMeter } from "@/components/dashboard/confidence-meter";
+import { TypeBadge } from "@/components/shared/type-badge";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { ReconcilingChip } from "@/components/shared/reconciling-chip";
+import { ConfidenceMeter } from "@/components/shared/confidence-meter";
+import { EmptyState } from "@/components/shared/empty-state";
 import { formatRelativeTime } from "@/lib/format";
 
 type MemoryRow = {
@@ -24,10 +26,11 @@ export function MemoriesTable({ memories, basePath }: { memories: MemoryRow[]; b
 
   if (memories.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border py-20 text-center">
-        <p className="text-sm font-medium text-foreground">No memories match these filters</p>
-        <p className="text-sm text-muted-foreground">Try clearing filters, or send some via the remember() API.</p>
-      </div>
+      <EmptyState
+        icon={SearchX}
+        title="No memories match these filters"
+        description="Try clearing filters, or send some via the remember() API."
+      />
     );
   }
 

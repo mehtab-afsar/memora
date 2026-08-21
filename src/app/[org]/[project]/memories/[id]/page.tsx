@@ -3,12 +3,12 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Sparkles, RefreshCw, ShieldCheck, CircleCheck, ArrowRight } from "lucide-react";
 import { getProjectInOrg } from "@/lib/org";
 import { explain, getMemoryInProject } from "@/lib/memory-engine";
-import { TypeBadge } from "@/components/dashboard/type-badge";
-import { StatusBadge } from "@/components/dashboard/status-badge";
-import { ReconcilingChip } from "@/components/dashboard/reconciling-chip";
-import { ConfidenceMeter } from "@/components/dashboard/confidence-meter";
-import { MemoryActions } from "@/components/dashboard/memory-actions";
-import { VersionTimeline } from "@/components/dashboard/version-timeline";
+import { TypeBadge } from "@/components/shared/type-badge";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { ReconcilingChip } from "@/components/shared/reconciling-chip";
+import { ConfidenceMeter } from "@/components/shared/confidence-meter";
+import { MemoryActions } from "@/features/memories/components/memory-actions";
+import { VersionTimeline } from "@/features/memories/components/version-timeline";
 import { formatRelativeTime } from "@/lib/format";
 
 const EVENT_ICON = {

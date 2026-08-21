@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/password";
-import { signIn } from "@/auth";
+import { signIn } from "@/features/auth/lib/auth";
 
 const signupSchema = z.object({
   name: z.string().trim().min(1).max(200).optional().or(z.literal("")),

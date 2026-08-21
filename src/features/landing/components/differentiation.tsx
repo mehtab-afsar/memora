@@ -1,3 +1,5 @@
+import { X, Check } from "lucide-react";
+
 const ROWS = [
   {
     label: "What gets stored",
@@ -23,11 +25,11 @@ const ROWS = [
 
 export function Differentiation() {
   return (
-    <div className="overflow-hidden rounded-lg border border-[var(--lp-border)]">
-      <div className="grid grid-cols-[1fr_1.4fr_1.4fr] border-b border-[var(--lp-border)] text-sm font-medium">
-        <div className="bg-[var(--lp-surface)] px-5 py-3" />
-        <div className="bg-[var(--lp-surface)] px-5 py-3 text-[var(--lp-text-tertiary)]">Naive memory APIs</div>
-        <div className="bg-[var(--lp-accent-subtle)] px-5 py-3 text-[var(--lp-accent)]">MEMORA</div>
+    <div className="overflow-hidden rounded-lg border-2 border-[var(--lp-text)]">
+      <div className="grid grid-cols-[1fr_1.4fr_1.4fr] border-b-2 border-[var(--lp-text)] text-sm font-bold">
+        <div className="bg-[var(--lp-surface)] px-5 py-4" />
+        <div className="bg-[var(--lp-surface)] px-5 py-4 text-[var(--lp-text-tertiary)]">Naive memory APIs</div>
+        <div className="bg-[var(--lp-text)] px-5 py-4 text-white">MEMORA</div>
       </div>
       {ROWS.map((row, i) => (
         <div
@@ -36,10 +38,14 @@ export function Differentiation() {
             i < ROWS.length - 1 ? "border-b border-[var(--lp-border)]" : ""
           }`}
         >
-          <div className="bg-[var(--lp-bg)] px-5 py-4 font-medium text-[var(--lp-text)]">{row.label}</div>
-          <div className="bg-[var(--lp-bg)] px-5 py-4 text-[var(--lp-text-secondary)]">{row.naive}</div>
-          <div className="border-l border-[var(--lp-accent)] bg-[var(--lp-accent-subtle)] px-5 py-4 text-[var(--lp-text)]">
-            {row.memora}
+          <div className="bg-[var(--lp-bg)] px-5 py-5 font-bold text-[var(--lp-text)]">{row.label}</div>
+          <div className="flex items-start gap-2 bg-[var(--lp-bg)] px-5 py-5 text-[var(--lp-text-tertiary)]">
+            <X className="mt-0.5 size-4 shrink-0 text-[var(--lp-text-tertiary)]" />
+            <span>{row.naive}</span>
+          </div>
+          <div className="flex items-start gap-2 border-l-2 border-[var(--lp-accent)] bg-[var(--lp-accent-subtle)] px-5 py-5 font-medium text-[var(--lp-text)]">
+            <Check className="mt-0.5 size-4 shrink-0 text-[var(--lp-accent)]" />
+            <span>{row.memora}</span>
           </div>
         </div>
       ))}

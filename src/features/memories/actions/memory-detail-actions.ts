@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { assertProjectAccess } from "@/lib/dashboard-auth";
+import { assertProjectAccess } from "@/features/auth/lib/dashboard-auth";
 import { getMemoryInProject } from "@/lib/memory-engine";
 import { verify, forgetMemory, updateMemory } from "@/lib/memory-engine";
 import { withUsageTracking } from "@/lib/usage-tracking";

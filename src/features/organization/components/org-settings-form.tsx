@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { renameOrgAction } from "@/app/[org]/settings/actions";
+import { renameOrgAction } from "@/features/organization/actions/organization-actions";
 
 export function OrgSettingsForm({ orgId, name }: { orgId: string; name: string }) {
   const [isPending, startTransition] = useTransition();

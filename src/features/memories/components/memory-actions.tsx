@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { verifyMemoryAction, updateMemoryAction, forgetMemoryAction } from "@/app/[org]/[project]/memories/[id]/actions";
+import { verifyMemoryAction, updateMemoryAction, forgetMemoryAction } from "@/features/memories/actions/memory-detail-actions";
 
 export function MemoryActions({
   orgId,

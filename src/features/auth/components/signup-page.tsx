@@ -2,15 +2,17 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { signupAction, type SignupState } from "./actions";
+import { User, Mail, Lock } from "lucide-react";
+import { signupAction, type SignupState } from "@/features/auth/actions/signup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { BrandMark } from "@/components/brand-mark";
 
 const initialState: SignupState = {};
 
-export default function SignupPage() {
+export function SignupPage() {
   const [state, formAction, pending] = useActionState(signupAction, initialState);
 
   return (
@@ -23,29 +25,59 @@ export default function SignupPage() {
       </header>
 
       <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-6 pb-24">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Create your MEMORA account</h1>
-          <p className="text-sm text-muted-foreground">Start building agents with reliable memory.</p>
-        </div>
-        <form action={formAction} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="name">Name (optional)</Label>
-            <Input id="name" name="name" type="text" autoComplete="name" />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" required autoComplete="email" />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" name="password" type="password" required minLength={8} autoComplete="new-password" />
-          </div>
-          {state.error && <p className="text-sm text-destructive">{state.error}</p>}
-          <Button type="submit" disabled={pending} className="mt-1">
-            {pending ? "Creating account..." : "Create account"}
-          </Button>
-        </form>
-        <p className="text-sm text-muted-foreground">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Create your account</CardTitle>
+            <CardDescription>Start building agents with reliable memory.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form action={formAction} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="name">Name</Label>
+                <div className="relative">
+                  <User className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input id="name" name="name" type="text" autoComplete="name" placeholder="Optional" className="pl-9" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    placeholder="you@company.com"
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    placeholder="At least 8 characters"
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+              {state.error && <p className="text-sm text-destructive">{state.error}</p>}
+              <Button type="submit" disabled={pending} className="mt-1">
+                {pending ? "Creating account..." : "Create account"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+        <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link href="/login" className="text-foreground underline underline-offset-2">
             Log in

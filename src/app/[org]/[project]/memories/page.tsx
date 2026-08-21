@@ -1,11 +1,12 @@
-import Link from "next/link";
+import { Database } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getProjectInOrg, resolveCurrentEnvironment } from "@/lib/org";
 import { listMemories } from "@/lib/memory-engine";
 import { MEMORY_STATUSES, MEMORY_TYPES } from "@/lib/memory-types";
-import { MemoryFilters } from "@/components/dashboard/memory-filters";
-import { MemoriesTable } from "@/components/dashboard/memories-table";
-import { Button } from "@/components/ui/button";
+import { MemoryFilters } from "@/features/memories/components/memory-filters";
+import { MemoriesTable } from "@/features/memories/components/memories-table";
+import { PageHeader } from "@/components/shared/page-header";
+import { Pagination } from "@/components/shared/pagination";
 
 const PAGE_SIZE = 25;
 
@@ -56,46 +57,17 @@ export default async function MemoriesPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">Memories</h1>
-          <p className="text-sm text-muted-foreground">
-            {result.total.toLocaleString()} memor{result.total === 1 ? "y" : "ies"} in {environment.name}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        icon={Database}
+        title="Memories"
+        description={`${result.total.toLocaleString()} memor${result.total === 1 ? "y" : "ies"} in ${environment.name}`}
+      />
 
       <MemoryFilters />
 
       <MemoriesTable memories={result.memories} basePath={basePath} />
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>
-            Page {page} of {totalPages}
-          </span>
-          <div className="flex gap-2">
-            {page <= 1 ? (
-              <Button variant="outline" size="sm" disabled>
-                Previous
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" render={<Link href={pageHref(page - 1)} />}>
-                Previous
-              </Button>
-            )}
-            {page >= totalPages ? (
-              <Button variant="outline" size="sm" disabled>
-                Next
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" render={<Link href={pageHref(page + 1)} />}>
-                Next
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} hrefFor={pageHref} />
     </div>
   );
 }

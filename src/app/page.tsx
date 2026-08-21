@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { auth } from "@/auth";
-import { getCurrentOrgForUser, getFirstProjectForOrg, createOrgWithProject } from "@/lib/org";
-import { LandingPage } from "@/components/marketing/landing-page";
+import { auth } from "@/features/auth/lib/auth";
+import { getCurrentOrgForUser, getFirstProjectForOrg } from "@/lib/org";
+import { LandingPage } from "@/features/landing/components/landing-page";
 
 export const metadata: Metadata = {
   title: "MEMORA — The trust layer for AI memory",
@@ -18,12 +18,7 @@ export default async function Home() {
 
   const org = await getCurrentOrgForUser(session.user.id);
   if (!org) {
-    // No dedicated onboarding step — a first workspace is provisioned silently
-    // and the user lands straight in it. A real onboarding flow comes later;
-    // for now the only thing worth showing is the product itself.
-    const defaultOrgName = session.user.name ? `${session.user.name}'s workspace` : "My workspace";
-    const created = await createOrgWithProject(session.user.id, defaultOrgName, "Default project");
-    redirect(`/${created.org.id}/${created.project.id}/overview`);
+    redirect("/onboarding");
   }
 
   const project = await getFirstProjectForOrg(org.id);

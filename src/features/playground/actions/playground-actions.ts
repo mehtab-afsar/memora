@@ -1,6 +1,6 @@
 "use server";
 
-import { assertProjectAccess } from "@/lib/dashboard-auth";
+import { assertProjectAccess } from "@/features/auth/lib/dashboard-auth";
 import { getEnvironmentInProject } from "@/lib/org";
 import { recall, remember, type RecallResult, type RememberOutcome } from "@/lib/memory-engine";
 import { drainPendingJobs } from "@/lib/reconcile";

@@ -1,9 +1,9 @@
 import { cookies } from "next/headers";
-import { assertProjectAccess } from "@/lib/dashboard-auth";
+import { assertProjectAccess } from "@/features/auth/lib/dashboard-auth";
 import { getProjectsForOrg, getEnvironmentsForProject } from "@/lib/org";
-import { DashboardSidebar, MobileSidebar } from "@/components/dashboard/sidebar";
-import { SidebarProvider } from "@/components/dashboard/sidebar-provider";
-import { DashboardTopbar } from "@/components/dashboard/topbar";
+import { DashboardSidebar, MobileSidebar } from "@/shell/sidebar";
+import { SidebarProvider } from "@/shell/sidebar-provider";
+import { DashboardTopbar } from "@/shell/topbar";
 
 export default async function ProjectLayout({
   children,

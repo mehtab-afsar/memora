@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardHeader, CardTitle, CardAction, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { createApiKeyAction, revokeApiKeyAction } from "@/app/[org]/[project]/settings/api-keys/actions";
+import { EmptyState } from "@/components/shared/empty-state";
+import { createApiKeyAction, revokeApiKeyAction } from "@/features/api-keys/actions/api-keys-actions";
 import { formatRelativeTime } from "@/lib/format";
 
 type ApiKey = {
@@ -91,9 +93,10 @@ function EnvironmentKeysCard({
   };
 
   return (
-    <div className="rounded-lg border border-border bg-card">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <span className="font-mono text-sm font-medium text-foreground">{environment.name}</span>
+    <Card>
+      <CardHeader className="border-b border-border">
+        <CardTitle className="font-mono">{environment.name}</CardTitle>
+        <CardAction>
         <Dialog open={createOpen} onOpenChange={closeCreateDialog}>
           <DialogTrigger render={<Button variant="outline" size="sm" className="gap-1.5" />}>
             <Plus className="size-3.5" />
@@ -143,50 +146,50 @@ function EnvironmentKeysCard({
             )}
           </DialogContent>
         </Dialog>
-      </div>
+        </CardAction>
+      </CardHeader>
 
-      {environment.keys.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-10 text-center">
-          <KeyRound className="size-4 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No keys in this environment yet.</p>
-        </div>
-      ) : (
-        <ul className="divide-y divide-border">
-          {environment.keys.map((key) => (
-            <li key={key.id} className="flex items-center justify-between px-4 py-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-foreground">{key.name}</span>
-                  <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
-                    {key.keyPrefix}…
-                  </code>
-                  {key.revokedAt && (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                      Revoked
-                    </span>
-                  )}
+      <CardContent className="px-0">
+        {environment.keys.length === 0 ? (
+          <EmptyState icon={KeyRound} title="No keys in this environment yet." className="border-none py-10" />
+        ) : (
+          <ul className="divide-y divide-border">
+            {environment.keys.map((key) => (
+              <li key={key.id} className="flex items-center justify-between px-4 py-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-foreground">{key.name}</span>
+                    <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+                      {key.keyPrefix}…
+                    </code>
+                    {key.revokedAt && (
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                        Revoked
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Created {formatRelativeTime(key.createdAt)}
+                    {key.lastUsedAt && <> · Last used {formatRelativeTime(key.lastUsedAt)}</>}
+                  </p>
                 </div>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Created {formatRelativeTime(key.createdAt)}
-                  {key.lastUsedAt && <> · Last used {formatRelativeTime(key.lastUsedAt)}</>}
-                </p>
-              </div>
-              {!key.revokedAt && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5 text-muted-foreground hover:text-destructive"
-                  onClick={() => handleRevoke(key.id)}
-                  disabled={isPending}
-                >
-                  <Ban className="size-3.5" />
-                  Revoke
-                </Button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+                {!key.revokedAt && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 text-muted-foreground hover:text-destructive"
+                    onClick={() => handleRevoke(key.id)}
+                    disabled={isPending}
+                  >
+                    <Ban className="size-3.5" />
+                    Revoke
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }

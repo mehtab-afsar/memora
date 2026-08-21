@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { assertProjectAccess } from "@/lib/dashboard-auth";
+import { assertProjectAccess } from "@/features/auth/lib/dashboard-auth";
 import { getEnvironmentInProject, createApiKey, revokeApiKey } from "@/lib/org";
 
 export async function createApiKeyAction(

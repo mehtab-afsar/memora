@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { assertProjectAccess } from "@/lib/dashboard-auth";
+import { assertProjectAccess } from "@/features/auth/lib/dashboard-auth";
 import { getEnvironmentInProject } from "@/lib/org";
 import {
   recordExperience,

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getProjectInOrg, getEnvironmentsForProject } from "@/lib/org";
-import { EnvironmentsManager } from "@/components/dashboard/environments-manager";
+import { EnvironmentsManager } from "@/features/environments/components/environments-manager";
 
 export default async function EnvironmentsSettingsPage({
   params,

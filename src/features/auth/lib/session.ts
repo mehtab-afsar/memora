@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
-import { auth } from "@/auth";
+import { auth } from "@/features/auth/lib/auth";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 
@@ -17,8 +17,18 @@ export async function requireUser() {
     redirect("/login");
   }
 
-  const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
-  if (!user) {
+  let userExists = false;
+  try {
+    const [user] = await db.select({ id: users.id }).from(users).where(eq(users.id, session.user.id)).limit(1);
+    userExists = Boolean(user);
+  } catch {
+    // A transient DB hiccup here shouldn't crash every page behind auth —
+    // fail the same way a genuinely stale session does. If the database is
+    // actually down, the next real query the page makes will surface that
+    // clearly, rather than this check turning it into a raw stack trace.
+  }
+
+  if (!userExists) {
     redirect("/login");
   }
 

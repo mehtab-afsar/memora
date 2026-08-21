@@ -1,6 +1,8 @@
+import { KeyRound } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getProjectInOrg, getEnvironmentsForProject, getApiKeysForEnvironment } from "@/lib/org";
-import { ApiKeysManager } from "@/components/dashboard/api-keys-manager";
+import { ApiKeysManager } from "@/features/api-keys/components/api-keys-manager";
+import { PageHeader } from "@/components/shared/page-header";
 
 export default async function ApiKeysSettingsPage({
   params,
@@ -19,10 +21,11 @@ export default async function ApiKeysSettingsPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">API Keys</h1>
-        <p className="text-sm text-muted-foreground">Manage keys per environment. Full keys are only ever shown once.</p>
-      </div>
+      <PageHeader
+        icon={KeyRound}
+        title="API Keys"
+        description="Manage keys per environment. Full keys are only ever shown once."
+      />
       <ApiKeysManager orgId={orgId} projectId={projectId} environments={withKeys} />
     </div>
   );
