@@ -1,0 +1,2 @@
+ALTER TABLE "memories" ADD COLUMN "content_tsv" "tsvector" GENERATED ALWAYS AS (to_tsvector('english', content)) STORED;--> statement-breakpoint
+CREATE INDEX "memories_content_tsv_idx" ON "memories" USING gin ("content_tsv");

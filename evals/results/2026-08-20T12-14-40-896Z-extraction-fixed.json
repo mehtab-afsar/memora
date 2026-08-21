@@ -1,0 +1,260 @@
+{
+  "startedAt": "2026-08-20T12:14:40.896Z",
+  "finishedAt": "2026-08-20T12:27:26.163Z",
+  "dataset": "golden",
+  "tag": "extraction-fixed",
+  "pipelineModel": "claude-sonnet-5",
+  "judgeModel": "claude-opus-5",
+  "accuracy": 1,
+  "correct": 14,
+  "total": 14,
+  "ungraded": [],
+  "byCategory": {
+    "single-hop": {
+      "correct": 4,
+      "total": 4
+    },
+    "temporal": {
+      "correct": 3,
+      "total": 3
+    },
+    "multi-hop": {
+      "correct": 2,
+      "total": 2
+    },
+    "exact-string": {
+      "correct": 2,
+      "total": 2
+    },
+    "contradiction": {
+      "correct": 1,
+      "total": 1
+    },
+    "abstain": {
+      "correct": 2,
+      "total": 2
+    }
+  },
+  "latency": {
+    "writeP50": 19826.306125000003,
+    "writeP95": 36786.85008300003,
+    "writeCalls": 16,
+    "reconcileP50": 20732.390749999962,
+    "reconcileP95": 40510.234458000006,
+    "reconcileCalls": 7,
+    "readP50": 13832.902207999956,
+    "readP95": 29108.89599999995,
+    "readCalls": 14
+  },
+  "storage": {
+    "totalMemories": 28,
+    "memoriesPerCase": {
+      "dietary": 4,
+      "job-change": 4,
+      "family-travel": 6,
+      "infra-identifiers": 5,
+      "allergy-conflict": 3,
+      "restatement": 3,
+      "unknowable": 3
+    },
+    "memoriesPerWrite": 1.75
+  },
+  "calls": {
+    "anthropicPerWrite": 2.3125,
+    "voyagePerWrite": 1.375,
+    "voyagePerRead": 1,
+    "byOperation": {
+      "anthropic:extract_memories": 16,
+      "voyage:document": 22,
+      "anthropic:decide_memory_action": 21,
+      "voyage:query": 14
+    }
+  },
+  "cost": {
+    "pipeline": {
+      "anthropicInputTokens": 69513,
+      "anthropicOutputTokens": 9123,
+      "voyageTokens": 482,
+      "anthropicUsd": 0.23025600000000002,
+      "voyageUsd": null,
+      "totalUsd": 0.23025600000000002,
+      "voyageUnpriced": true
+    },
+    "pipelineUsdPer1kMemories": 8.223428571428572,
+    "judgeUsd": 0.17508,
+    "judgeTokens": {
+      "inputTokens": 24281,
+      "outputTokens": 2147
+    }
+  },
+  "results": [
+    {
+      "caseId": "dietary",
+      "category": "single-hop",
+      "question": "What are the user's dietary restrictions?",
+      "gold": "The user is vegan and dislikes cilantro.",
+      "answer": "The user has been vegan for about three years, and they dislike cilantro (saying it tastes like soap), asking for it to be left off their food.",
+      "correct": true,
+      "reason": "Candidate conveys both vegan diet and cilantro dislike, matching the reference with harmless extra detail.",
+      "retrieved": 3,
+      "topScore": 0.6874992343190838,
+      "readMs": 19975.308832999996
+    },
+    {
+      "caseId": "dietary",
+      "category": "single-hop",
+      "question": "Can I recommend a beef dish to this user?",
+      "gold": "No — the user is vegan.",
+      "answer": "No — the user has been vegan for about three years, so a beef dish wouldn't be appropriate (also avoid cilantro, which they dislike).",
+      "correct": true,
+      "reason": "Candidate correctly says no because the user is vegan, matching the reference.",
+      "retrieved": 3,
+      "topScore": 0.687498735016908,
+      "readMs": 21466.308541000006
+    },
+    {
+      "caseId": "job-change",
+      "category": "temporal",
+      "question": "Where does the user work?",
+      "gold": "Cobalt Labs, as a staff engineer on the platform team.",
+      "answer": "The user works as a staff engineer at Cobalt Labs on the platform team. They previously worked as a data analyst at Northwind Logistics but left last month.",
+      "correct": true,
+      "reason": "Candidate correctly identifies Cobalt Labs, staff engineer on the platform team, with extra prior-employer detail.",
+      "retrieved": 2,
+      "topScore": 0.6874992098207541,
+      "readMs": 424.03524999998626
+    },
+    {
+      "caseId": "job-change",
+      "category": "temporal",
+      "question": "What is the user's current job title?",
+      "gold": "Staff engineer.",
+      "answer": "The user is currently a staff engineer at Cobalt Labs on the platform team, having left their previous data analyst role at Northwind Logistics last month.",
+      "correct": true,
+      "reason": "The candidate identifies the current title as staff engineer, matching the reference.",
+      "retrieved": 2,
+      "topScore": 0.6874987847657251,
+      "readMs": 15525.368041999987
+    },
+    {
+      "caseId": "job-change",
+      "category": "temporal",
+      "question": "Has the user ever worked at Northwind Logistics?",
+      "gold": "Yes, previously, as a data analyst — they left.",
+      "answer": "Yes — the user worked as a data analyst at Northwind Logistics for about two years, but left last month. They now work as a staff engineer on the platform team at Cobalt Labs.",
+      "correct": true,
+      "reason": "Candidate confirms prior data analyst role at Northwind Logistics that the user left, matching the reference.",
+      "retrieved": 2,
+      "topScore": 0.682659414408385,
+      "readMs": 26580.51120799998
+    },
+    {
+      "caseId": "family-travel",
+      "category": "multi-hop",
+      "question": "Where is the user likely to travel in December?",
+      "gold": "Lisbon, to visit their sister Priya.",
+      "answer": "Likely Lisbon, Portugal — the user takes the last two weeks of December off each year to visit family, and their sister Priya moved to Lisbon last year. (This is an inference; the memories don't state the destination directly.)",
+      "correct": true,
+      "reason": "Candidate identifies Lisbon to visit sister Priya, matching the reference.",
+      "retrieved": 3,
+      "topScore": 0.6874995034344639,
+      "readMs": 21413.662207999965
+    },
+    {
+      "caseId": "family-travel",
+      "category": "multi-hop",
+      "question": "Should I suggest a fifteen-hour flight itinerary to this user?",
+      "gold": "No — the user dislikes flights longer than about six hours.",
+      "answer": "Probably not — the user dislikes long-haul flights over six hours, saying they leave them feeling wrecked and exhausted, so a fifteen-hour itinerary would be a poor fit.",
+      "correct": true,
+      "reason": "Candidate matches reference: user dislikes flights over six hours, so no.",
+      "retrieved": 3,
+      "topScore": 0.6779755358865693,
+      "readMs": 427.5024590000394
+    },
+    {
+      "caseId": "infra-identifiers",
+      "category": "exact-string",
+      "question": "What is the staging cluster called?",
+      "gold": "atlas-stg-2",
+      "answer": "Your staging cluster is named atlas-stg-2 (as distinct from the production cluster, atlas-prod-7).",
+      "correct": true,
+      "reason": "Candidate names atlas-stg-2, matching the reference.",
+      "retrieved": 5,
+      "topScore": 0.6874988718213723,
+      "readMs": 553.6369999999879
+    },
+    {
+      "caseId": "infra-identifiers",
+      "category": "exact-string",
+      "question": "Which Slack channel do production alerts go to?",
+      "gold": "#plat-oncall",
+      "answer": "Production alerts (for atlas-prod-7) are routed to the #plat-oncall channel.",
+      "correct": true,
+      "reason": "Candidate names #plat-oncall, matching the reference.",
+      "retrieved": 5,
+      "topScore": 0.682659778929732,
+      "readMs": 11167.772583000013
+    },
+    {
+      "caseId": "allergy-conflict",
+      "category": "contradiction",
+      "question": "Does the user have a peanut allergy?",
+      "gold": "A peanut allergy is recorded, but a later statement conflicts with it — the conflict should be surfaced rather than silently resolved.",
+      "answer": "The memories conflict: one says you have a serious peanut allergy and carry an EpiPen, while another records that you ate a peanut butter sandwich for lunch.",
+      "correct": true,
+      "reason": "The candidate surfaces both conflicting records rather than asserting one side.",
+      "retrieved": 2,
+      "topScore": 0.697498844699665,
+      "readMs": 13832.902207999956
+    },
+    {
+      "caseId": "restatement",
+      "category": "single-hop",
+      "question": "What theme does the user prefer?",
+      "gold": "Dark mode.",
+      "answer": "The user prefers dark mode in every app they use — always — since light themes give them a headache.",
+      "correct": true,
+      "reason": "Candidate states dark mode, matching the reference, with extra detail.",
+      "retrieved": 1,
+      "topScore": 0.687499228184856,
+      "readMs": 19764.861124999938
+    },
+    {
+      "caseId": "unknowable",
+      "category": "abstain",
+      "question": "What car does the user drive?",
+      "gold": "Unknown — nothing recorded about a car. The correct answer is to say so.",
+      "answer": "I don't know — the memories don't mention a car. They only note that you bike to work most days.",
+      "correct": true,
+      "reason": "Candidate correctly states it doesn't know, matching the unknown reference.",
+      "retrieved": 3,
+      "topScore": 0.682660692156335,
+      "readMs": 466.7754999999888
+    },
+    {
+      "caseId": "unknowable",
+      "category": "abstain",
+      "question": "What is the user's partner's name?",
+      "gold": "Unknown — nothing recorded about a partner. The correct answer is to say so.",
+      "answer": "I don't know — the memories I have don't mention your partner or their name.",
+      "correct": true,
+      "reason": "Candidate correctly states it doesn't know, matching the reference's unknown answer.",
+      "retrieved": 3,
+      "topScore": 0.6874987013945102,
+      "readMs": 29108.89599999995
+    },
+    {
+      "caseId": "unknowable",
+      "category": "single-hop",
+      "question": "Where does the user live?",
+      "gold": "Berlin.",
+      "answer": "You live in Berlin.",
+      "correct": true,
+      "reason": "Candidate states Berlin, matching the reference.",
+      "retrieved": 3,
+      "topScore": 0.687498422018331,
+      "readMs": 5957.834833000088
+    }
+  ]
+}

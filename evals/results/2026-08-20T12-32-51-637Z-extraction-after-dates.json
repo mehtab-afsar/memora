@@ -1,0 +1,399 @@
+{
+  "startedAt": "2026-08-20T12:32:51.637Z",
+  "model": "claude-sonnet-5",
+  "passed": 15,
+  "total": 15,
+  "results": [
+    {
+      "id": "employer-specificity",
+      "text": "I work as a data analyst at Northwind Logistics. Been there two years.",
+      "why": "Dropping 'Logistics' made a later question about Northwind Logistics unanswerable.",
+      "expect": {
+        "minCount": 1,
+        "mustMention": [
+          "Northwind Logistics"
+        ]
+      },
+      "candidates": [
+        {
+          "content": "Works as a data analyst at Northwind Logistics",
+          "type": "fact",
+          "importance": 0.8,
+          "confidence": 0.95,
+          "rationale": "Explicit statement of user's job title and employer"
+        },
+        {
+          "content": "Has worked at Northwind Logistics for two years",
+          "type": "fact",
+          "importance": 0.6,
+          "confidence": 0.9,
+          "rationale": "Explicit statement of tenure at current job"
+        }
+      ],
+      "failures": [],
+      "ms": 4732.627333
+    },
+    {
+      "id": "cluster-identifiers",
+      "text": "Our production cluster is called atlas-prod-7 and the staging one is atlas-stg-2. Don't mix them up.",
+      "why": "Identifiers are exactly what keyword retrieval is for — they have to survive verbatim.",
+      "expect": {
+        "minCount": 1,
+        "mustMention": [
+          "atlas-prod-7",
+          "atlas-stg-2"
+        ]
+      },
+      "candidates": [
+        {
+          "content": "User's production cluster is named atlas-prod-7",
+          "type": "fact",
+          "importance": 0.8,
+          "confidence": 0.95,
+          "rationale": "Explicit, specific infrastructure naming fact relevant to future technical interactions."
+        },
+        {
+          "content": "User's staging cluster is named atlas-stg-2",
+          "type": "fact",
+          "importance": 0.8,
+          "confidence": 0.95,
+          "rationale": "Explicit, specific infrastructure naming fact relevant to future technical interactions."
+        },
+        {
+          "content": "Assistant should be careful not to confuse the production cluster (atlas-prod-7) with the staging cluster (atlas-stg-2)",
+          "type": "instruction",
+          "importance": 0.85,
+          "confidence": 0.95,
+          "rationale": "Direct standing directive from the user about how to behave regarding these two cluster names."
+        }
+      ],
+      "failures": [],
+      "ms": 4195.839
+    },
+    {
+      "id": "channel-handle",
+      "text": "The on-call rotation for atlas-prod-7 is handled by the platform team, and alerts go to #plat-oncall.",
+      "why": "Handles and paths must not be paraphrased into prose.",
+      "expect": {
+        "minCount": 1,
+        "mustMention": [
+          "#plat-oncall"
+        ]
+      },
+      "candidates": [
+        {
+          "content": "The on-call rotation for atlas-prod-7 is handled by the platform team",
+          "type": "fact",
+          "importance": 0.6,
+          "confidence": 0.9,
+          "rationale": "States a durable operational fact about ownership of a system's on-call rotation."
+        },
+        {
+          "content": "Alerts for atlas-prod-7 go to the #plat-oncall channel",
+          "type": "fact",
+          "importance": 0.6,
+          "confidence": 0.9,
+          "rationale": "States a durable operational fact about where alerts are routed."
+        }
+      ],
+      "failures": [],
+      "ms": 3619.770792
+    },
+    {
+      "id": "budget-figure",
+      "text": "Keep the infra budget under $2,500 a month — that's a hard cap from finance.",
+      "why": "A number that gets rounded or dropped is worse than no memory at all.",
+      "expect": {
+        "minCount": 1,
+        "mustMatch": [
+          "2[,.]?500"
+        ]
+      },
+      "candidates": [
+        {
+          "content": "User has a hard cap of $2,500/month for infrastructure budget, mandated by finance.",
+          "type": "instruction",
+          "importance": 0.9,
+          "confidence": 0.95,
+          "rationale": "Explicit hard constraint from finance that should govern future infra-related decisions and recommendations."
+        },
+        {
+          "content": "User's finance department imposes budget constraints on infrastructure spending.",
+          "type": "context",
+          "importance": 0.5,
+          "confidence": 0.8,
+          "rationale": "Background info about organizational financial oversight relevant to future budget discussions."
+        }
+      ],
+      "failures": [],
+      "ms": 3931.257958
+    },
+    {
+      "id": "allergy-evidence",
+      "text": "Had a peanut butter sandwich for lunch today and it was delicious.",
+      "why": "Trivial as an event, decisive as evidence about a stated allergy. Extraction cannot see existing memories, so it must keep what could bear on one and let reconciliation judge it.",
+      "expect": {
+        "minCount": 1,
+        "mustMention": [
+          "peanut"
+        ]
+      },
+      "candidates": [
+        {
+          "content": "Ate a peanut butter sandwich for lunch",
+          "type": "event",
+          "importance": 0.2,
+          "confidence": 0.9,
+          "rationale": "Ordinary event but provides evidence about the user's diet/food preferences, which could be useful in future interactions."
+        },
+        {
+          "content": "Enjoys peanut butter sandwiches",
+          "type": "preference",
+          "importance": 0.2,
+          "confidence": 0.6,
+          "rationale": "User expressed that the sandwich was delicious, suggesting a mild food preference, though based on a single instance."
+        }
+      ],
+      "failures": [],
+      "ms": 3980.3282089999993
+    },
+    {
+      "id": "diet-evidence",
+      "text": "Ordered the ribeye last night, cooked perfectly.",
+      "why": "Same shape: an ordinary meal that contradicts a claimed diet if one is on file.",
+      "expect": {
+        "minCount": 1
+      },
+      "candidates": [
+        {
+          "content": "Ordered ribeye steak at a restaurant, which was cooked well",
+          "type": "event",
+          "importance": 0.2,
+          "confidence": 0.9,
+          "rationale": "Reflects a dining choice that provides mild evidence of food preferences (enjoys steak/ribeye), though the specific event itself is not durable."
+        }
+      ],
+      "failures": [],
+      "ms": 4139.799667
+    },
+    {
+      "id": "multiple-facts",
+      "text": "I've been vegan for about three years now. Also, I really can't stand cilantro — it tastes like soap to me.",
+      "why": "Two unrelated facts in one sentence must not be collapsed into one memory.",
+      "expect": {
+        "minCount": 2,
+        "mustMention": [
+          "vegan",
+          "cilantro"
+        ]
+      },
+      "candidates": [
+        {
+          "content": "Has been vegan for about three years",
+          "type": "fact",
+          "importance": 0.8,
+          "confidence": 0.95,
+          "rationale": "Explicit, direct statement of a stable dietary fact relevant to future food-related interactions."
+        },
+        {
+          "content": "Dislikes cilantro; says it tastes like soap to them",
+          "type": "preference",
+          "importance": 0.6,
+          "confidence": 0.95,
+          "rationale": "Explicit, direct statement of a food preference/aversion relevant to future recommendations."
+        }
+      ],
+      "failures": [],
+      "ms": 3917.2466660000005
+    },
+    {
+      "id": "third-person",
+      "text": "I like it when you keep answers short and skip the preamble.",
+      "why": "Memories are read back into prompts, so they are written about the user, not by them.",
+      "expect": {
+        "minCount": 1,
+        "thirdPerson": true
+      },
+      "candidates": [
+        {
+          "content": "Prefers short answers without preamble.",
+          "type": "preference",
+          "importance": 0.8,
+          "confidence": 0.95,
+          "rationale": "User explicitly stated a preference for concise responses without introductory filler."
+        }
+      ],
+      "failures": [],
+      "ms": 3156.7952910000004
+    },
+    {
+      "id": "pure-reaction",
+      "text": "lol that's hilarious",
+      "why": "Reactions are not memories. Over-extraction is still a real failure mode.",
+      "expect": {
+        "maxCount": 0
+      },
+      "candidates": [],
+      "failures": [],
+      "ms": 3095.8704159999998
+    },
+    {
+      "id": "acknowledgement",
+      "text": "ok cool, thanks!",
+      "why": "Same — nothing here holds beyond this exchange.",
+      "expect": {
+        "maxCount": 0
+      },
+      "candidates": [],
+      "failures": [],
+      "ms": 3006.6865
+    },
+    {
+      "id": "small-talk",
+      "text": "It's raining here again, third day in a row.",
+      "why": "Weather says nothing durable about the user; keeping it is noise in every future recall.",
+      "expect": {
+        "maxCount": 0
+      },
+      "candidates": [],
+      "failures": [],
+      "ms": 3564.543375
+    },
+    {
+      "id": "relative-date-yesterday",
+      "text": "[1:56 pm on 8 May, 2023]\nCaroline: I went to an LGBTQ support group yesterday and it was so powerful.",
+      "why": "A memory that says 'yesterday' is worthless a week later. When the text carries its own timestamp, relative references have to be resolved against it — this is the single reason every LoCoMo temporal question would otherwise fail.",
+      "expect": {
+        "minCount": 1,
+        "mustMatch": [
+          "7 May|May 7|2023-05-07"
+        ]
+      },
+      "candidates": [
+        {
+          "content": "Attended an LGBTQ support group on 7 May 2023 and found it powerful",
+          "type": "event",
+          "importance": 0.6,
+          "confidence": 0.9,
+          "rationale": "User directly stated attending an LGBTQ support group, an event that reflects meaningful personal involvement and likely ongoing relevance (identity, community, support needs)."
+        }
+      ],
+      "failures": [],
+      "ms": 5044.042959
+    },
+    {
+      "id": "relative-date-tomorrow",
+      "text": "[10:00 am on 3 March, 2024]\nSam: I'm flying to Lisbon tomorrow for the offsite.",
+      "why": "Same rule in the other direction, so it is a rule and not a memorised example.",
+      "expect": {
+        "minCount": 1,
+        "mustMatch": [
+          "4 March|March 4|2024-03-04"
+        ]
+      },
+      "candidates": [
+        {
+          "content": "Sam flew to Lisbon on 4 March 2024 for a work offsite.",
+          "type": "event",
+          "importance": 0.5,
+          "confidence": 0.9,
+          "rationale": "States a specific trip and reason (work offsite) that could be useful context for future interactions, e.g. scheduling or location awareness."
+        }
+      ],
+      "failures": [],
+      "ms": 3495.555167
+    },
+    {
+      "id": "no-date-no-invention",
+      "text": "I went to the dentist yesterday and it was fine.",
+      "why": "With no timestamp in the text there is nothing to resolve against, and a guessed date is a false memory.",
+      "expect": {
+        "mustNotMatch": [
+          "\\b(19|20)\\d{2}\\b"
+        ]
+      },
+      "candidates": [
+        {
+          "content": "Went to the dentist (visit occurred the day before this message)",
+          "type": "event",
+          "importance": 0.2,
+          "confidence": 0.8,
+          "rationale": "A routine dental visit; low durability but could be mildly relevant to health context history."
+        }
+      ],
+      "failures": [],
+      "ms": 3496.671042
+    },
+    {
+      "id": "dated-session",
+      "text": "[1:56 pm on 8 May, 2023]\nCaroline: Hey Mel! Good to see you! How have you been?\nMelanie: Hey Caroline! I'm swamped with the kids & work. What's up with you?\nCaroline: I went to a LGBTQ support group yesterday and it was so powerful.\nMelanie: Wow, that's cool! Did you hear any inspiring stories?\nCaroline: The transgender stories really got to me. I'm thinking about counseling as a career.\nMelanie: You'd be great at that. I painted a lake sunrise last year that still makes me happy.\nCaroline: I'd love to see it. I'm also taking the kids swimming next weekend.",
+      "why": "A whole session, not a single sentence. The one-line version of this test passed while a real LoCoMo session produced ten memories and not one date — the length and the competing topics are the failure, so the test has to carry them.",
+      "expect": {
+        "minCount": 4,
+        "mustMatch": [
+          "7 May|May 7|2023-05-07"
+        ]
+      },
+      "candidates": [
+        {
+          "content": "Melanie has kids.",
+          "type": "fact",
+          "importance": 0.6,
+          "confidence": 0.9,
+          "rationale": "Melanie mentions being swamped with kids, indicating she is a parent."
+        },
+        {
+          "content": "Melanie is currently busy with kids and work.",
+          "type": "context",
+          "importance": 0.3,
+          "confidence": 0.7,
+          "rationale": "Stated as current life context."
+        },
+        {
+          "content": "Melanie painted a lake sunrise painting in 2022 that still makes her happy.",
+          "type": "event",
+          "importance": 0.4,
+          "confidence": 0.8,
+          "rationale": "Melanie mentions a specific past creative activity and hobby, indicating she paints; 'last year' resolved relative to 8 May 2023."
+        },
+        {
+          "content": "Melanie enjoys painting as a hobby.",
+          "type": "preference",
+          "importance": 0.5,
+          "confidence": 0.7,
+          "rationale": "Inferred from her painting a lake sunrise that still makes her happy."
+        },
+        {
+          "content": "Caroline attended an LGBTQ support group on 7 May 2023 and found it powerful.",
+          "type": "event",
+          "importance": 0.5,
+          "confidence": 0.9,
+          "rationale": "Explicit event with date resolved from 'yesterday' relative to 8 May 2023."
+        },
+        {
+          "content": "Caroline is considering pursuing a career in counseling, inspired by transgender stories she heard at an LGBTQ support group.",
+          "type": "goal",
+          "importance": 0.8,
+          "confidence": 0.8,
+          "rationale": "Explicit statement of a potential career goal."
+        },
+        {
+          "content": "Caroline is taking her kids swimming on the weekend of 13-14 May 2023.",
+          "type": "event",
+          "importance": 0.4,
+          "confidence": 0.8,
+          "rationale": "Explicit planned event; 'next weekend' resolved relative to 8 May 2023 (Monday), also indicates Caroline has kids."
+        },
+        {
+          "content": "Caroline has kids.",
+          "type": "fact",
+          "importance": 0.6,
+          "confidence": 0.8,
+          "rationale": "Inferred from her plan to take the kids swimming."
+        }
+      ],
+      "failures": [],
+      "ms": 7515.665208
+    }
+  ]
+}

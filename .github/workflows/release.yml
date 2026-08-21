@@ -1,0 +1,55 @@
+name: Release packages
+
+# Publishes @memora/client and @memora/mcp to npm. Manual on purpose — a
+# publish is irreversible (a version number can never be reused), so it should
+# be a decision, not a side effect of merging.
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Which package to publish
+        required: true
+        type: choice
+        options: [client, mcp, both]
+      dry_run:
+        description: Pack and inspect without publishing
+        type: boolean
+        default: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # npm provenance
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      # Never publish something that does not build or pass its tests.
+      - run: pnpm build:packages
+      - run: pnpm test
+
+      - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DRY: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: |
+          set -euo pipefail
+          publish() {
+            echo "::group::$1"
+            pnpm --filter "$1" publish --no-git-checks --provenance $DRY
+            echo "::endgroup::"
+          }
+          case "${{ inputs.package }}" in
+            client) publish @memora/client ;;
+            mcp)    publish @memora/mcp ;;
+            both)   publish @memora/client; publish @memora/mcp ;;
+          esac

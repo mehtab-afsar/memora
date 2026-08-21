@@ -1,0 +1,322 @@
+{
+  "startedAt": "2026-08-20T16:01:53.525Z",
+  "finishedAt": "2026-08-20T16:38:23.943Z",
+  "dataset": "locomo",
+  "tag": "locomo-first",
+  "pipelineModel": "claude-sonnet-5",
+  "judgeModel": "claude-opus-5",
+  "accuracy": 0.75,
+  "correct": 15,
+  "total": 20,
+  "ungraded": [],
+  "byCategory": {
+    "multi-hop": {
+      "correct": 2,
+      "total": 3
+    },
+    "temporal": {
+      "correct": 2,
+      "total": 4
+    },
+    "open-domain": {
+      "correct": 1,
+      "total": 1
+    },
+    "single-hop": {
+      "correct": 5,
+      "total": 7
+    },
+    "abstain": {
+      "correct": 5,
+      "total": 5
+    }
+  },
+  "latency": {
+    "writeP50": 20043.610250000027,
+    "writeP95": 37488.204417,
+    "writeCalls": 19,
+    "reconcileP50": 1380876.064667,
+    "reconcileP95": 1380876.064667,
+    "reconcileCalls": 1,
+    "readP50": 17300.707958000014,
+    "readP95": 24633.679625000106,
+    "readCalls": 20
+  },
+  "storage": {
+    "totalMemories": 210,
+    "memoriesPerCase": {
+      "conv-26": 210
+    },
+    "memoriesPerWrite": 11.052631578947368
+  },
+  "calls": {
+    "anthropicPerWrite": 12,
+    "voyagePerWrite": 3.789473684210526,
+    "voyagePerRead": 1,
+    "byOperation": {
+      "anthropic:extract_memories": 19,
+      "voyage:document": 72,
+      "anthropic:decide_memory_action": 209,
+      "voyage:query": 20
+    }
+  },
+  "cost": {
+    "pipeline": {
+      "anthropicInputTokens": 602122,
+      "anthropicOutputTokens": 86949,
+      "voyageTokens": 5916,
+      "anthropicUsd": 2.073734,
+      "voyageUsd": null,
+      "totalUsd": 2.073734,
+      "voyageUnpriced": true
+    },
+    "pipelineUsdPer1kMemories": 9.87492380952381,
+    "judgeUsd": 0.337515,
+    "judgeTokens": {
+      "inputTokens": 50468,
+      "outputTokens": 3407
+    }
+  },
+  "results": [
+    {
+      "caseId": "conv-26",
+      "category": "multi-hop",
+      "question": "What did Caroline research?",
+      "gold": "Adoption agencies",
+      "answer": "Caroline researched adoption agencies as part of pursuing adoption as a single parent, ultimately choosing one specifically because it supports LGBTQ+ individuals in adoption.",
+      "correct": true,
+      "reason": "Candidate correctly states Caroline researched adoption agencies, matching the reference with added detail.",
+      "retrieved": 10,
+      "topScore": 0.6874660220780785,
+      "readMs": 14561.256166999927
+    },
+    {
+      "caseId": "conv-26",
+      "category": "temporal",
+      "question": "When did Caroline go to the LGBTQ support group?",
+      "gold": "7 May 2023",
+      "answer": "Caroline attended an LGBTQ support group on 7 May 2023, and found it powerful — especially the transgender stories shared there.",
+      "correct": true,
+      "reason": "Candidate gives the same date, 7 May 2023, with extra harmless detail.",
+      "retrieved": 10,
+      "topScore": 0.674965359517468,
+      "readMs": 9868.424417000031
+    },
+    {
+      "caseId": "conv-26",
+      "category": "open-domain",
+      "question": "What fields would Caroline be likely to pursue in her educaton?",
+      "gold": "Psychology, counseling certification",
+      "answer": "Caroline is interested in pursuing counseling or mental health — specifically counseling for transgender people, helping them with self-acceptance and mental health.",
+      "correct": true,
+      "reason": "Candidate names counseling/mental health field, matching the reference's psychology/counseling certification.",
+      "retrieved": 10,
+      "topScore": 0.6749798138969647,
+      "readMs": 20810.48845799989
+    },
+    {
+      "caseId": "conv-26",
+      "category": "single-hop",
+      "question": "What did the charity race raise awareness for?",
+      "gold": "mental health",
+      "answer": "The charity race Melanie ran on 20 May 2023 was for mental health.",
+      "correct": true,
+      "reason": "Candidate correctly identifies mental health as the cause.",
+      "retrieved": 10,
+      "topScore": 0.6749646577136276,
+      "readMs": 24633.679625000106
+    },
+    {
+      "caseId": "conv-26",
+      "category": "abstain",
+      "question": "What did Caroline realize after her charity race?",
+      "gold": "Unknown — the conversation does not say. The correct answer is to say so.",
+      "answer": "I don't know — the memories I have don't mention a charity race or any realization Caroline had after one.",
+      "correct": true,
+      "reason": "Reference says unknown and candidate correctly states it doesn't know.",
+      "retrieved": 10,
+      "topScore": 0.6701311968717962,
+      "readMs": 401.4268750001211
+    },
+    {
+      "caseId": "conv-26",
+      "category": "multi-hop",
+      "question": "What is Caroline's identity?",
+      "gold": "Transgender woman",
+      "answer": "Caroline is a trans woman (transitioning for about three years as of June 2023) and a painter/artist who has been making art since around age 17. She's part of the LGBTQ+ community, advocates for trans rights and visibility, and uses her art to explore her gender identity, womanhood, and themes of inclusivity and acceptance.",
+      "correct": true,
+      "reason": "The candidate correctly identifies Caroline as a trans woman, matching the reference, with extra detail.",
+      "retrieved": 10,
+      "topScore": 0.9685685895438345,
+      "readMs": 16511.21758299996
+    },
+    {
+      "caseId": "conv-26",
+      "category": "temporal",
+      "question": "When did Melanie paint a sunrise?",
+      "gold": "2022",
+      "answer": "Melanie painted a lake sunrise painting in 2022.",
+      "correct": true,
+      "reason": "Candidate gives 2022, matching the reference.",
+      "retrieved": 10,
+      "topScore": 0.9499630648490238,
+      "readMs": 20901.79304099991
+    },
+    {
+      "caseId": "conv-26",
+      "category": "single-hop",
+      "question": "What did Melanie realize after the charity race?",
+      "gold": "self-care is important",
+      "answer": "I don't know — the memories note that Melanie ran a charity race for mental health on 20 May 2023, but they don't say what she realized afterward.",
+      "correct": false,
+      "reason": "The candidate claims not to know, while the reference states she realized self-care is important.",
+      "retrieved": 10,
+      "topScore": 0.6749633474571544,
+      "readMs": 408.35137499985285
+    },
+    {
+      "caseId": "conv-26",
+      "category": "abstain",
+      "question": "What are Melanie's plans for the summer with respect to adoption?",
+      "gold": "Unknown — the conversation does not say. The correct answer is to say so.",
+      "answer": "I don't know — the memories don't mention any summer plans for Melanie regarding adoption. They only note that she was once considering adopting a child herself and has a friend who adopted around 2022.",
+      "correct": true,
+      "reason": "The candidate states it does not know, matching the reference's unknown answer.",
+      "retrieved": 10,
+      "topScore": 0.6826306141966401,
+      "readMs": 20057.88950000005
+    },
+    {
+      "caseId": "conv-26",
+      "category": "multi-hop",
+      "question": "What is Caroline's relationship status?",
+      "gold": "Single",
+      "answer": "I don't know Caroline's current relationship status. The memories only note that she went through a tough breakup at some point and had friends and family support her through it.",
+      "correct": false,
+      "reason": "The candidate claims not to know, while the reference states she is single.",
+      "retrieved": 10,
+      "topScore": 0.6690072086026042,
+      "readMs": 25462.208958999952
+    },
+    {
+      "caseId": "conv-26",
+      "category": "temporal",
+      "question": "When did Melanie run a charity race?",
+      "gold": "The sunday before 25 May 2023",
+      "answer": "Melanie ran a charity race for mental health on 20 May 2023.",
+      "correct": false,
+      "reason": "The reference indicates the Sunday before 25 May 2023 (21 May), but the candidate states 20 May 2023, a Saturday, contradicting the reference.",
+      "retrieved": 10,
+      "topScore": 0.6749621703574948,
+      "readMs": 417.55245900014415
+    },
+    {
+      "caseId": "conv-26",
+      "category": "single-hop",
+      "question": "How does Melanie prioritize self-care?",
+      "gold": "by carving out some me-time each day for activities like running, reading, or playing the violin",
+      "answer": "Melanie treats self-care as an ongoing personal journey, setting aside daily \"me-time\" for things like running, reading, or playing violin. She also relies on creative outlets — pottery and painting — for self-expression, calm, and emotional comfort, though an injury in September 2023 forced a break from pottery.",
+      "correct": true,
+      "reason": "Candidate conveys the daily me-time with running, reading, and violin, matching the reference, with extra detail.",
+      "retrieved": 10,
+      "topScore": 0.9624616793556163,
+      "readMs": 17300.707958000014
+    },
+    {
+      "caseId": "conv-26",
+      "category": "abstain",
+      "question": "What type of individuals does the adoption agency Melanie is considering support?",
+      "gold": "Unknown — the conversation does not say. The correct answer is to say so.",
+      "answer": "I don't know — the memories don't mention an adoption agency Melanie is considering. They only note that Caroline chose an agency specifically because it supports LGBTQ+ individuals in adoption.",
+      "correct": true,
+      "reason": "The candidate correctly states it doesn't know, matching the reference's unknown answer.",
+      "retrieved": 10,
+      "topScore": 0.6826223816930274,
+      "readMs": 22659.254833000014
+    },
+    {
+      "caseId": "conv-26",
+      "category": "temporal",
+      "question": "When is Melanie planning on going camping?",
+      "gold": "June 2023",
+      "answer": "I don't know of a specific upcoming camping date. The memories only note past trips (e.g., mountains in June 2023 and the weekend of ~1-2 July 2023) and a yearly family tradition of camping each summer.",
+      "correct": false,
+      "reason": "The candidate claims not to know the camping date, while the reference states June 2023.",
+      "retrieved": 10,
+      "topScore": 0.6654438322963404,
+      "readMs": 403.8173330000136
+    },
+    {
+      "caseId": "conv-26",
+      "category": "single-hop",
+      "question": "What are Caroline's plans for the summer?",
+      "gold": "researching adoption agencies",
+      "answer": "Caroline is planning a special summer 2023 trip with Melanie — just the two of them — to catch up and explore nature.",
+      "correct": false,
+      "reason": "The candidate describes a trip with Melanie, not researching adoption agencies as the reference states.",
+      "retrieved": 10,
+      "topScore": 0.9374645219239314,
+      "readMs": 19498.160916999914
+    },
+    {
+      "caseId": "conv-26",
+      "category": "abstain",
+      "question": "Why did Melanie choose the adoption agency?",
+      "gold": "Unknown — the conversation does not say. The correct answer is to say so.",
+      "answer": "I don't know — the memories say Caroline chose an adoption agency because it supports LGBTQ+ individuals in adoption, but there's nothing about Melanie choosing an agency.",
+      "correct": true,
+      "reason": "The candidate states it does not know, matching the reference's unknown answer.",
+      "retrieved": 10,
+      "topScore": 0.6826211659832897,
+      "readMs": 21797.625832999824
+    },
+    {
+      "caseId": "conv-26",
+      "category": "single-hop",
+      "question": "What type of individuals does the adoption agency Caroline is considering support?",
+      "gold": "LGBTQ+ individuals",
+      "answer": "The agency she chose supports LGBTQ+ individuals in adoption — she picked it specifically for that inclusivity.",
+      "correct": true,
+      "reason": "Candidate correctly identifies LGBTQ+ individuals, matching the reference.",
+      "retrieved": 10,
+      "topScore": 0.6874597494599615,
+      "readMs": 457.8223749999888
+    },
+    {
+      "caseId": "conv-26",
+      "category": "abstain",
+      "question": "What is Melanie excited about in her adoption process?",
+      "gold": "Unknown — the conversation does not say. The correct answer is to say so.",
+      "answer": "I don't know — the memories about an active adoption process (applying to agencies, choosing an LGBTQ+-friendly agency, attending advice groups) are about Caroline, not Melanie. For Melanie, the memories only note she has considered/has a goal of adoption and has a friend who adopted a child around 2022, without saying what excites her.",
+      "correct": true,
+      "reason": "The candidate says it doesn't know, matching the reference's unknown answer.",
+      "retrieved": 10,
+      "topScore": 0.6779419178103822,
+      "readMs": 19788.521625000052
+    },
+    {
+      "caseId": "conv-26",
+      "category": "single-hop",
+      "question": "Why did Caroline choose the adoption agency?",
+      "gold": "because of their inclusivity and support for LGBTQ+ individuals",
+      "answer": "Caroline chose that adoption agency specifically because it supports LGBTQ+ individuals in adoption — she valued its inclusivity.",
+      "correct": true,
+      "reason": "Candidate matches the reference: inclusivity and LGBTQ+ support.",
+      "retrieved": 10,
+      "topScore": 0.6874586562195744,
+      "readMs": 24204.236000000034
+    },
+    {
+      "caseId": "conv-26",
+      "category": "single-hop",
+      "question": "What is Caroline excited about in the adoption process?",
+      "gold": "creating a family for kids who need one",
+      "answer": "Caroline is excited about becoming a mother and building her own family through adoption as a single parent — giving a safe, loving home to kids who haven't had one. She applied to adoption agencies in August 2023 and was especially glad to find an agency that's inclusive and supportive of LGBTQ+ adopters.",
+      "correct": true,
+      "reason": "The candidate conveys excitement about creating a family/home for kids who need one, matching the reference.",
+      "retrieved": 10,
+      "topScore": 0.6874650049508688,
+      "readMs": 433.0122499996796
+    }
+  ]
+}

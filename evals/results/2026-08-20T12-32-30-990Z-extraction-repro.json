@@ -1,0 +1,67 @@
+{
+  "startedAt": "2026-08-20T12:32:30.990Z",
+  "model": "claude-sonnet-5",
+  "passed": 0,
+  "total": 1,
+  "results": [
+    {
+      "id": "dated-session",
+      "text": "[1:56 pm on 8 May, 2023]\nCaroline: Hey Mel! Good to see you! How have you been?\nMelanie: Hey Caroline! I'm swamped with the kids & work. What's up with you?\nCaroline: I went to a LGBTQ support group yesterday and it was so powerful.\nMelanie: Wow, that's cool! Did you hear any inspiring stories?\nCaroline: The transgender stories really got to me. I'm thinking about counseling as a career.\nMelanie: You'd be great at that. I painted a lake sunrise last year that still makes me happy.\nCaroline: I'd love to see it. I'm also taking the kids swimming next weekend.",
+      "why": "A whole session, not a single sentence. The one-line version of this test passed while a real LoCoMo session produced ten memories and not one date — the length and the competing topics are the failure, so the test has to carry them.",
+      "expect": {
+        "minCount": 4,
+        "mustMatch": [
+          "7 May|May 7|2023-05-07"
+        ]
+      },
+      "candidates": [
+        {
+          "content": "Melanie is currently swamped with kids and work.",
+          "type": "context",
+          "importance": 0.3,
+          "confidence": 0.8,
+          "rationale": "Melanie stated her current life situation."
+        },
+        {
+          "content": "Melanie has children.",
+          "type": "fact",
+          "importance": 0.6,
+          "confidence": 0.9,
+          "rationale": "Repeatedly referenced (swamped with kids, taking kids swimming)."
+        },
+        {
+          "content": "Melanie painted a lake sunrise painting last year that still makes her happy.",
+          "type": "event",
+          "importance": 0.4,
+          "confidence": 0.85,
+          "rationale": "Specific personal event/hobby (painting) that reveals a durable interest in art."
+        },
+        {
+          "content": "Melanie is planning to take her kids swimming next weekend.",
+          "type": "event",
+          "importance": 0.3,
+          "confidence": 0.85,
+          "rationale": "Concrete upcoming plan involving her children."
+        },
+        {
+          "content": "Caroline attended an LGBTQ support group and found it powerful, especially transgender stories.",
+          "type": "event",
+          "importance": 0.5,
+          "confidence": 0.9,
+          "rationale": "Reveals Caroline's engagement with LGBTQ community and emotional connection."
+        },
+        {
+          "content": "Caroline is considering a career in counseling.",
+          "type": "goal",
+          "importance": 0.7,
+          "confidence": 0.8,
+          "rationale": "Explicit statement of a potential career goal."
+        }
+      ],
+      "failures": [
+        "nothing matched /7 May|May 7|2023-05-07/"
+      ],
+      "ms": 6197.812375
+    }
+  ]
+}

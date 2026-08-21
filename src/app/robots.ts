@@ -10,7 +10,7 @@ export default function robots(): MetadataRoute.Robots {
         // Dashboard routes live at /<org-id>/<project-id>/... with no static
         // prefix to pattern-match — they're auth-gated anyway, so there's
         // nothing indexable there regardless.
-        disallow: ["/api/", "/onboarding"],
+        disallow: ["/api/"],
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,

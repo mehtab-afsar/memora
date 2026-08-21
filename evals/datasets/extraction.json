@@ -1,0 +1,158 @@
+{
+  "name": "extraction",
+  "description": "Extraction in isolation: what survives the first stage, and in what wording. Assertions are deterministic \u2014 substrings, counts and regexes \u2014 so this runs in seconds with no judge model and no embeddings. It exists because two golden-set failures (a missed contradiction and a lost employer name) both turned out to be extraction problems, not decision problems.",
+  "cases": [
+    {
+      "id": "employer-specificity",
+      "text": "I work as a data analyst at Northwind Logistics. Been there two years.",
+      "why": "Dropping 'Logistics' made a later question about Northwind Logistics unanswerable.",
+      "expect": {
+        "minCount": 1,
+        "mustMention": [
+          "Northwind Logistics"
+        ]
+      }
+    },
+    {
+      "id": "cluster-identifiers",
+      "text": "Our production cluster is called atlas-prod-7 and the staging one is atlas-stg-2. Don't mix them up.",
+      "why": "Identifiers are exactly what keyword retrieval is for \u2014 they have to survive verbatim.",
+      "expect": {
+        "minCount": 1,
+        "mustMention": [
+          "atlas-prod-7",
+          "atlas-stg-2"
+        ]
+      }
+    },
+    {
+      "id": "channel-handle",
+      "text": "The on-call rotation for atlas-prod-7 is handled by the platform team, and alerts go to #plat-oncall.",
+      "why": "Handles and paths must not be paraphrased into prose.",
+      "expect": {
+        "minCount": 1,
+        "mustMention": [
+          "#plat-oncall"
+        ]
+      }
+    },
+    {
+      "id": "budget-figure",
+      "text": "Keep the infra budget under $2,500 a month \u2014 that's a hard cap from finance.",
+      "why": "A number that gets rounded or dropped is worse than no memory at all.",
+      "expect": {
+        "minCount": 1,
+        "mustMatch": [
+          "2[,.]?500"
+        ]
+      }
+    },
+    {
+      "id": "allergy-evidence",
+      "text": "Had a peanut butter sandwich for lunch today and it was delicious.",
+      "why": "Trivial as an event, decisive as evidence about a stated allergy. Extraction cannot see existing memories, so it must keep what could bear on one and let reconciliation judge it.",
+      "expect": {
+        "minCount": 1,
+        "mustMention": [
+          "peanut"
+        ]
+      }
+    },
+    {
+      "id": "diet-evidence",
+      "text": "Ordered the ribeye last night, cooked perfectly.",
+      "why": "Same shape: an ordinary meal that contradicts a claimed diet if one is on file.",
+      "expect": {
+        "minCount": 1
+      }
+    },
+    {
+      "id": "multiple-facts",
+      "text": "I've been vegan for about three years now. Also, I really can't stand cilantro \u2014 it tastes like soap to me.",
+      "why": "Two unrelated facts in one sentence must not be collapsed into one memory.",
+      "expect": {
+        "minCount": 2,
+        "mustMention": [
+          "vegan",
+          "cilantro"
+        ]
+      }
+    },
+    {
+      "id": "third-person",
+      "text": "I like it when you keep answers short and skip the preamble.",
+      "why": "Memories are read back into prompts, so they are written about the user, not by them.",
+      "expect": {
+        "minCount": 1,
+        "thirdPerson": true
+      }
+    },
+    {
+      "id": "pure-reaction",
+      "text": "lol that's hilarious",
+      "why": "Reactions are not memories. Over-extraction is still a real failure mode.",
+      "expect": {
+        "maxCount": 0
+      }
+    },
+    {
+      "id": "acknowledgement",
+      "text": "ok cool, thanks!",
+      "why": "Same \u2014 nothing here holds beyond this exchange.",
+      "expect": {
+        "maxCount": 0
+      }
+    },
+    {
+      "id": "small-talk",
+      "text": "It's raining here again, third day in a row.",
+      "why": "Weather says nothing durable about the user; keeping it is noise in every future recall.",
+      "expect": {
+        "maxCount": 0
+      }
+    },
+    {
+      "id": "relative-date-yesterday",
+      "text": "[1:56 pm on 8 May, 2023]\nCaroline: I went to an LGBTQ support group yesterday and it was so powerful.",
+      "why": "A memory that says 'yesterday' is worthless a week later. When the text carries its own timestamp, relative references have to be resolved against it \u2014 this is the single reason every LoCoMo temporal question would otherwise fail.",
+      "expect": {
+        "minCount": 1,
+        "mustMatch": [
+          "7 May|May 7|2023-05-07"
+        ]
+      }
+    },
+    {
+      "id": "relative-date-tomorrow",
+      "text": "[10:00 am on 3 March, 2024]\nSam: I'm flying to Lisbon tomorrow for the offsite.",
+      "why": "Same rule in the other direction, so it is a rule and not a memorised example.",
+      "expect": {
+        "minCount": 1,
+        "mustMatch": [
+          "4 March|March 4|2024-03-04"
+        ]
+      }
+    },
+    {
+      "id": "no-date-no-invention",
+      "text": "I went to the dentist yesterday and it was fine.",
+      "why": "With no timestamp in the text there is nothing to resolve against, and a guessed date is a false memory.",
+      "expect": {
+        "mustNotMatch": [
+          "\\b(19|20)\\d{2}\\b"
+        ]
+      }
+    },
+    {
+      "id": "dated-session",
+      "text": "[1:56 pm on 8 May, 2023]\nCaroline: Hey Mel! Good to see you! How have you been?\nMelanie: Hey Caroline! I'm swamped with the kids & work. What's up with you?\nCaroline: I went to a LGBTQ support group yesterday and it was so powerful.\nMelanie: Wow, that's cool! Did you hear any inspiring stories?\nCaroline: The transgender stories really got to me. I'm thinking about counseling as a career.\nMelanie: You'd be great at that. I painted a lake sunrise last year that still makes me happy.\nCaroline: I'd love to see it. I'm also taking the kids swimming next weekend.",
+      "why": "A whole session, not a single sentence. The one-line version of this test passed while a real LoCoMo session produced ten memories and not one date \u2014 the length and the competing topics are the failure, so the test has to carry them.",
+      "expect": {
+        "minCount": 4,
+        "mustMatch": [
+          "7 May|May 7|2023-05-07"
+        ]
+      }
+    }
+  ]
+}

@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Benchmark data — LoCoMo and LongMemEval are licensed for use, not for
+# redistribution. Download and convert them locally (see evals/README.md).
+/evals/datasets/raw/
+/evals/datasets/locomo.json
+/evals/datasets/longmemeval.json

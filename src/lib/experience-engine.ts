@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { experiences } from "@/db/schema";
 import { generateLesson, synthesizeRecommendation, type ExperienceForRecommendation } from "@/lib/anthropic";
 import { embedDocument, embedQuery } from "@/lib/voyage";
+import { scoreExperience } from "@/lib/scoring";
 
 type ProjectScope = { projectId: string; environmentId: string };
 
@@ -75,20 +76,18 @@ export type ExperienceRecallResult = {
   createdAt: Date;
 };
 
-const RECALL_WEIGHTS = { similarity: 0.75, recency: 0.25 };
-// Longer half-life than memory freshness (90d, src/lib/memory-engine.ts) — infra/process
-// lessons stay valid longer than user preferences typically do.
-const RECENCY_HALF_LIFE_DAYS = 180;
-
+// Weights and decay live in src/lib/scoring.ts (EXPERIENCE_RECALL_WEIGHTS,
+// EXPERIENCE_RECENCY_DECAY_DAYS).
 function scoreAndRank<T extends { distance: unknown; createdAt: Date }>(
   rows: T[]
 ): (T & { similarity: number; relevanceScore: number })[] {
-  const now = Date.now();
+  const now = new Date();
   const scored = rows.map((row) => {
-    const similarity = 1 - Number(row.distance);
-    const ageDays = (now - row.createdAt.getTime()) / (1000 * 60 * 60 * 24);
-    const recency = Math.exp(-ageDays / RECENCY_HALF_LIFE_DAYS);
-    const relevanceScore = RECALL_WEIGHTS.similarity * similarity + RECALL_WEIGHTS.recency * recency;
+    const { similarity, relevanceScore } = scoreExperience({
+      similarity: 1 - Number(row.distance),
+      createdAt: row.createdAt,
+      now,
+    });
     return { ...row, similarity, relevanceScore };
   });
   return scored.sort((a, b) => b.relevanceScore - a.relevanceScore);

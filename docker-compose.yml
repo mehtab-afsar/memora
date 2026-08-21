@@ -16,5 +16,23 @@ services:
       timeout: 5s
       retries: 10
 
+  # Reconciliation worker. The API drains its own jobs after each response;
+  # this picks up retries, backlog, and anything orphaned by a crash or deploy.
+  # Started on demand: `docker compose --profile worker up -d`.
+  reconciler:
+    profiles: ["worker"]
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm reconcile --watch"
+    environment:
+      DATABASE_URL: postgres://memora:memora@postgres:5432/memora
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   memora_pgdata:

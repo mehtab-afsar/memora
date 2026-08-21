@@ -29,6 +29,41 @@
       "when": 1787005595476,
       "tag": "0003_fearless_dreaming_celestial",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787224878406,
+      "tag": "0004_blue_starhawk",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787225609041,
+      "tag": "0005_chief_thunderbolts",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787226109226,
+      "tag": "0006_sour_norman_osborn",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787230193862,
+      "tag": "0007_worried_white_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787230256895,
+      "tag": "0008_fantastic_diamondback",
+      "breakpoints": true
     }
   ]
 }

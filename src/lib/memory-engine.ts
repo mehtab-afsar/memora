@@ -1,20 +1,21 @@
-import { and, count, desc, eq, gte, ilike, inArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, inArray, lte, sql } from "drizzle-orm";
 import { cosineDistance } from "drizzle-orm/sql";
 import { db } from "@/db";
 import {
   memories,
   memoryEvidence,
   contradictions,
-  type memoryStatusEnum,
-  type memoryTypeEnum,
+  reconciliationJobs,
+  memoryTypeEnum,
+  memoryStatusEnum,
 } from "@/db/schema";
-import { extractMemories, decideMemoryAction, verifyMemory, type ExistingMemoryForDecision } from "@/lib/anthropic";
-import { embedDocument, embedQuery } from "@/lib/voyage";
+import { extractMemories, verifyMemory } from "@/lib/anthropic";
+import { embedDocument, embedDocuments, embedQuery } from "@/lib/voyage";
+import { collapseDuplicates, matchKind, scoreMemory } from "@/lib/scoring";
 
 type Scope = { projectId: string; environmentId: string; endUserId: string };
+type WriteScope = Scope & { agentId?: string; sessionId?: string };
 type ProjectScope = { projectId: string; environmentId: string };
-
-const NEAREST_NEIGHBOR_LIMIT = 5;
 
 // ---------------------------------------------------------------------------
 // remember()
@@ -25,192 +26,80 @@ export type RememberOutcome = {
   decision: "ADD" | "UPDATE" | "MERGE" | "IGNORE" | "FLAG";
   memoryId: string | null;
   reasoning: string;
+  /**
+   * Every write starts as an ADD and is judged afterwards. "pending" means the
+   * reconciliation job for this memory has not run yet, so its final decision
+   * (and any version link or contradiction flag) is still to come.
+   */
+  reconciliation?: "pending" | "done";
 };
 
 export async function remember(
-  scope: Scope & { content: string; sourceType: string; sourceId?: string }
+  scope: WriteScope & { content: string; sourceType: string; sourceId?: string }
 ): Promise<{ outcomes: RememberOutcome[] }> {
-  const { projectId, environmentId, endUserId, content, sourceType, sourceId } = scope;
+  const { projectId, environmentId, endUserId, agentId, sessionId, content, sourceType, sourceId } = scope;
 
+  // Append-only write path. One extraction call, one batched embedding call,
+  // then every candidate is inserted and queued. Whether a candidate is really
+  // a new fact, a new version of an old one, a restatement or a contradiction
+  // is decided afterwards by src/lib/reconcile.ts — see PLAN.md phase 1 for why
+  // that judgement no longer sits between the caller and their response.
   const candidates = await extractMemories(content);
-  const outcomes: RememberOutcome[] = [];
+  if (candidates.length === 0) return { outcomes: [] };
 
-  // Processed one candidate at a time (v1 simplification — see plan) so each
-  // decision sees any memories written earlier in this same remember() call.
-  for (const candidate of candidates) {
-    const embedding = await embedDocument(candidate.content);
+  const embeddings = await embedDocuments(candidates.map((candidate) => candidate.content));
 
-    const distanceExpr = cosineDistance(memories.embedding, embedding);
-    const nearestRows = await db
-      .select({
-        id: memories.id,
-        content: memories.content,
-        type: memories.type,
-        confidence: memories.confidence,
-        createdAt: memories.createdAt,
-        lastConfirmedAt: memories.lastConfirmedAt,
-        distance: distanceExpr,
-      })
-      .from(memories)
-      .where(
-        and(
-          eq(memories.projectId, projectId),
-          eq(memories.environmentId, environmentId),
-          eq(memories.endUserId, endUserId),
-          eq(memories.status, "active")
-        )
-      )
-      .orderBy(distanceExpr)
-      .limit(NEAREST_NEIGHBOR_LIMIT);
-
-    const nearestExisting: ExistingMemoryForDecision[] = nearestRows.map((row) => ({
-      id: row.id,
-      content: row.content,
-      type: row.type,
-      confidence: row.confidence,
-      createdAt: row.createdAt.toISOString(),
-      lastConfirmedAt: row.lastConfirmedAt.toISOString(),
-      similarity: 1 - Number(row.distance),
-    }));
-
-    const decision = await decideMemoryAction(candidate, nearestExisting);
-    const outcome = await persistDecision({
-      scope: { projectId, environmentId, endUserId },
-      candidate,
-      embedding,
-      decision,
-      sourceType,
-      sourceId,
-    });
-    outcomes.push(outcome);
-  }
-
-  return { outcomes };
-}
-
-async function persistDecision(params: {
-  scope: Scope;
-  candidate: { content: string; type: string; confidence: number; importance: number };
-  embedding: number[];
-  decision: Awaited<ReturnType<typeof decideMemoryAction>>;
-  sourceType: string;
-  sourceId?: string;
-}): Promise<RememberOutcome> {
-  const { scope, candidate, embedding, decision, sourceType, sourceId } = params;
-
-  switch (decision.decision) {
-    case "ADD": {
-      const [row] = await db
-        .insert(memories)
-        .values({
-          projectId: scope.projectId,
-          environmentId: scope.environmentId,
-          endUserId: scope.endUserId,
-          content: candidate.content,
-          type: candidate.type as (typeof memories.$inferInsert)["type"],
-          confidence: candidate.confidence,
-          importance: candidate.importance,
-          sourceType,
-          sourceId,
-          embedding,
-        })
-        .returning();
-      await insertEvidence(row.id, sourceType, sourceId, candidate.content, "extracted");
-      return { candidateContent: candidate.content, decision: "ADD", memoryId: row.id, reasoning: decision.reasoning };
-    }
-
-    case "UPDATE": {
-      if (!decision.target_memory_id) throw new Error("UPDATE decision missing target_memory_id");
-      const newRow = await createNewVersion({
-        scope,
-        oldMemoryId: decision.target_memory_id,
+  const inserted = await db
+    .insert(memories)
+    .values(
+      candidates.map((candidate, i) => ({
+        projectId,
+        environmentId,
+        endUserId,
+        agentId,
+        sessionId,
         content: candidate.content,
-        type: candidate.type,
+        type: candidate.type as (typeof memories.$inferInsert)["type"],
         confidence: candidate.confidence,
         importance: candidate.importance,
-        embedding,
         sourceType,
         sourceId,
-        reasoning: decision.reasoning,
-      });
-      return { candidateContent: candidate.content, decision: "UPDATE", memoryId: newRow.id, reasoning: decision.reasoning };
-    }
+        embedding: embeddings[i],
+        // Carried so reconciliation can put the same candidate to Claude that
+        // the old inline decision saw.
+        metadata: { extractionRationale: candidate.rationale },
+      }))
+    )
+    .returning({ id: memories.id, content: memories.content });
 
-    case "MERGE": {
-      if (!decision.target_memory_id || !decision.merged_content) {
-        throw new Error("MERGE decision missing target_memory_id or merged_content");
-      }
-      const [oldMemory] = await db.select().from(memories).where(eq(memories.id, decision.target_memory_id)).limit(1);
-      if (!oldMemory) throw new Error("MERGE target memory not found");
+  await db.insert(memoryEvidence).values(
+    inserted.map((row) => ({
+      memoryId: row.id,
+      sourceType,
+      sourceId,
+      excerpt: row.content,
+      eventType: "extracted" as const,
+    }))
+  );
 
-      const mergedEmbedding = await embedDocument(decision.merged_content);
-      const newRow = await createNewVersion({
-        scope,
-        oldMemoryId: decision.target_memory_id,
-        content: decision.merged_content,
-        type: oldMemory.type,
-        confidence: Math.max(oldMemory.confidence, candidate.confidence),
-        importance: Math.max(oldMemory.importance, candidate.importance),
-        embedding: mergedEmbedding,
-        sourceType,
-        sourceId,
-        reasoning: decision.reasoning,
-      });
-      return {
-        candidateContent: candidate.content,
-        decision: "MERGE",
-        memoryId: newRow.id,
-        reasoning: decision.reasoning,
-      };
-    }
+  await db.insert(reconciliationJobs).values(
+    inserted.map((row) => ({
+      memoryId: row.id,
+      projectId,
+      environmentId,
+      endUserId,
+    }))
+  );
 
-    case "IGNORE": {
-      // A redundant restatement of an existing memory is a confirmation signal,
-      // not a no-op — refresh its freshness and record the reconfirmation.
-      if (decision.target_memory_id) {
-        await db
-          .update(memories)
-          .set({ lastConfirmedAt: new Date() })
-          .where(eq(memories.id, decision.target_memory_id));
-        await insertEvidence(decision.target_memory_id, sourceType, sourceId, candidate.content, "reconfirmed");
-      }
-      return {
-        candidateContent: candidate.content,
-        decision: "IGNORE",
-        memoryId: decision.target_memory_id ?? null,
-        reasoning: decision.reasoning,
-      };
-    }
-
-    case "FLAG": {
-      const [row] = await db
-        .insert(memories)
-        .values({
-          projectId: scope.projectId,
-          environmentId: scope.environmentId,
-          endUserId: scope.endUserId,
-          content: candidate.content,
-          type: candidate.type as (typeof memories.$inferInsert)["type"],
-          confidence: candidate.confidence,
-          importance: candidate.importance,
-          status: "flagged",
-          sourceType,
-          sourceId,
-          embedding,
-        })
-        .returning();
-      await insertEvidence(row.id, sourceType, sourceId, candidate.content, "extracted");
-      if (decision.contradiction.conflicting_memory_id) {
-        await db.insert(contradictions).values({
-          projectId: scope.projectId,
-          memoryIdA: row.id,
-          memoryIdB: decision.contradiction.conflicting_memory_id,
-          reasoning: decision.contradiction.reasoning ?? decision.reasoning,
-        });
-      }
-      return { candidateContent: candidate.content, decision: "FLAG", memoryId: row.id, reasoning: decision.reasoning };
-    }
-  }
+  return {
+    outcomes: inserted.map((row) => ({
+      candidateContent: row.content,
+      decision: "ADD" as const,
+      memoryId: row.id,
+      reasoning: "Written as a new memory; reconciliation against existing memories is queued.",
+      reconciliation: "pending" as const,
+    })),
+  };
 }
 
 async function insertEvidence(
@@ -271,8 +160,8 @@ async function createNewVersion(params: {
 // recall()
 // ---------------------------------------------------------------------------
 
-const RECALL_WEIGHTS = { similarity: 0.6, confidence: 0.25, freshness: 0.15 };
-const FRESHNESS_HALF_LIFE_DAYS = 90;
+// Weights, decay and reason wording live in src/lib/scoring.ts so they can be
+// tested without a database.
 
 export type RecallResult = {
   memoryId: string;
@@ -282,67 +171,183 @@ export type RecallResult = {
   confidence: number;
   freshness: number;
   relevanceScore: number;
+  /** `flagged` means this memory contradicts another one and neither is settled. */
+  status: (typeof memoryStatusEnum.enumValues)[number];
+  /**
+   * Earlier versions of this same fact, newest first. Present so a caller can
+   * answer a question about the past ("did they ever work at X?") without the
+   * superseded rows competing for a slot in the ranking.
+   */
+  history: { content: string; supersededAt: Date }[];
+  /** Which retrieval pass found this memory: semantic, keyword, or both. */
+  matchedOn: "both" | "meaning" | "keyword";
   reason: string;
 };
 
-export async function recall(scope: Scope & { query: string; topK?: number }): Promise<RecallResult[]> {
-  const { projectId, environmentId, endUserId, query, topK = 10 } = scope;
+export type RecallFilters = {
+  types?: (typeof memoryTypeEnum.enumValues)[number][];
+  minConfidence?: number;
+  since?: Date;
+  until?: Date;
+  agentId?: string;
+  sessionId?: string;
+};
+
+export async function recall(
+  scope: Scope & { query: string; topK?: number } & RecallFilters
+): Promise<RecallResult[]> {
+  const {
+    projectId, environmentId, endUserId, query, topK = 10,
+    types, minConfidence, since, until, agentId, sessionId,
+  } = scope;
+
+  const conditions = [
+    eq(memories.projectId, projectId),
+    eq(memories.environmentId, environmentId),
+    eq(memories.endUserId, endUserId),
+    // Flagged memories are returned, not hidden. Filtering to `active` alone
+    // meant that detecting a contradiction silently removed both sides from
+    // every answer — the opposite of surfacing it. They come back labelled so
+    // the caller can show the conflict instead of guessing past it.
+    inArray(memories.status, ["active", "flagged"]),
+  ];
+  if (types?.length) conditions.push(inArray(memories.type, types));
+  if (minConfidence !== undefined) conditions.push(gte(memories.confidence, minConfidence));
+  if (since) conditions.push(gte(memories.createdAt, since));
+  if (until) conditions.push(lte(memories.createdAt, until));
+  if (agentId) conditions.push(eq(memories.agentId, agentId));
+  if (sessionId) conditions.push(eq(memories.sessionId, sessionId));
+
+  const scopeFilter = and(...conditions);
+
+  // Over-fetch from both passes: the final order is by relevance, not by either
+  // raw ranking, and collapsing duplicates removes rows.
+  const candidateLimit = topK * 3;
 
   const queryEmbedding = await embedQuery(query);
   const distanceExpr = cosineDistance(memories.embedding, queryEmbedding);
 
-  const rows = await db
-    .select({
-      id: memories.id,
-      content: memories.content,
-      type: memories.type,
-      confidence: memories.confidence,
-      lastConfirmedAt: memories.lastConfirmedAt,
-      distance: distanceExpr,
-    })
-    .from(memories)
-    .where(
-      and(
-        eq(memories.projectId, projectId),
-        eq(memories.environmentId, environmentId),
-        eq(memories.endUserId, endUserId),
-        eq(memories.status, "active")
-      )
-    )
-    .orderBy(distanceExpr)
-    .limit(topK * 3);
+  const columns = {
+    id: memories.id,
+    content: memories.content,
+    type: memories.type,
+    confidence: memories.confidence,
+    status: memories.status,
+    lastConfirmedAt: memories.lastConfirmedAt,
+    createdAt: memories.createdAt,
+    supersedesId: memories.supersedesId,
+    embedding: memories.embedding,
+    distance: distanceExpr,
+  };
 
-  const now = Date.now();
-  const scored = rows.map((row) => {
-    const similarity = 1 - Number(row.distance);
-    const ageDays = (now - row.lastConfirmedAt.getTime()) / (1000 * 60 * 60 * 24);
-    const freshness = Math.exp(-ageDays / FRESHNESS_HALF_LIFE_DAYS);
-    const relevanceScore =
-      RECALL_WEIGHTS.similarity * similarity +
-      RECALL_WEIGHTS.confidence * row.confidence +
-      RECALL_WEIGHTS.freshness * freshness;
+  // Two passes, fused below. Embeddings find meaning; the full-text index finds
+  // the exact strings — names, ids, channel handles — that embeddings blur.
+  const [vectorRows, keywordRows] = await Promise.all([
+    db.select(columns).from(memories).where(scopeFilter).orderBy(distanceExpr).limit(candidateLimit),
+    db
+      .select(columns)
+      .from(memories)
+      .where(and(scopeFilter, sql`${memories.contentTsv} @@ websearch_to_tsquery('english', ${query})`))
+      .orderBy(desc(sql`ts_rank(${memories.contentTsv}, websearch_to_tsquery('english', ${query}))`))
+      .limit(candidateLimit),
+  ]);
 
-    const reasonParts: string[] = [];
-    if (similarity > 0.8) reasonParts.push(`high semantic match (${similarity.toFixed(2)})`);
-    else if (similarity > 0.5) reasonParts.push(`moderate semantic match (${similarity.toFixed(2)})`);
-    else reasonParts.push(`weak semantic match (${similarity.toFixed(2)})`);
-    if (row.confidence > 0.8) reasonParts.push("high confidence");
-    if (freshness > 0.8) reasonParts.push("recently confirmed");
-    else if (freshness < 0.3) reasonParts.push("not recently confirmed");
+  const vectorRank = new Map(vectorRows.map((row, i) => [row.id, i + 1]));
+  const keywordRank = new Map(keywordRows.map((row, i) => [row.id, i + 1]));
+
+  const merged = new Map<string, (typeof vectorRows)[number]>();
+  for (const row of [...vectorRows, ...keywordRows]) merged.set(row.id, row);
+
+  const now = new Date();
+  const scored = [...merged.values()].map((row) => {
+    const ranks = {
+      vectorRank: vectorRank.get(row.id) ?? null,
+      keywordRank: keywordRank.get(row.id) ?? null,
+    };
+    const score = scoreMemory({
+      // A keyword-only hit still carries a real cosine distance — it was just
+      // outside the vector top-N — so the similarity we report stays honest.
+      similarity: 1 - Number(row.distance),
+      confidence: row.confidence,
+      lastConfirmedAt: row.lastConfirmedAt,
+      now,
+      ranks,
+    });
 
     return {
       memoryId: row.id,
       content: row.content,
       type: row.type,
-      similarity,
-      confidence: row.confidence,
-      freshness,
-      relevanceScore,
-      reason: reasonParts.join(", "),
+      status: row.status,
+      chainRootId: row.supersedesId ?? row.id,
+      embedding: row.embedding,
+      createdAt: row.createdAt,
+      matchedOn: matchKind(ranks),
+      ...score,
+      reason:
+        row.status === "flagged"
+          ? `${score.reason} — flagged: contradicts another memory, unresolved`
+          : score.reason,
     };
   });
 
-  return scored.sort((a, b) => b.relevanceScore - a.relevanceScore).slice(0, topK);
+  scored.sort((a, b) => b.relevanceScore - a.relevanceScore);
+
+  // Between an append-only write and its reconciliation a fact and its
+  // reworded twin can both be active, so results are collapsed before slicing.
+  const top = collapseDuplicates(scored).slice(0, topK);
+  const history = await priorVersions(top.filter((row) => row.chainRootId !== row.memoryId).map((row) => row.memoryId));
+
+  return top
+    .map((row) => ({
+      memoryId: row.memoryId,
+      content: row.content,
+      type: row.type,
+      status: row.status,
+      similarity: row.similarity,
+      confidence: row.confidence,
+      freshness: row.freshness,
+      relevanceScore: row.relevanceScore,
+      matchedOn: row.matchedOn,
+      history: history.get(row.memoryId) ?? [],
+      reason: row.reason,
+    }));
+}
+
+/** How far back a result reports its own history. Chains are short in practice. */
+const HISTORY_DEPTH = 5;
+
+/**
+ * Walks the supersedes chain backwards for the given memories in one query.
+ * Superseded rows are deliberately kept out of the ranking — an old job title
+ * should not compete with the current one for a slot — but they are the answer
+ * to any question about what used to be true, so they travel with their
+ * successor instead of being dropped.
+ */
+async function priorVersions(memoryIds: string[]): Promise<Map<string, { content: string; supersededAt: Date }[]>> {
+  const byMemory = new Map<string, { content: string; supersededAt: Date }[]>();
+  if (memoryIds.length === 0) return byMemory;
+
+  const rows = await db.execute<{ head_id: string; content: string; updated_at: Date; depth: number }>(sql`
+    WITH RECURSIVE chain AS (
+      SELECT id AS head_id, id, supersedes_id, content, updated_at, 1 AS depth
+        FROM memories
+       WHERE id IN (${sql.join(memoryIds.map((id) => sql`${id}::uuid`), sql`, `)})
+      UNION ALL
+      SELECT c.head_id, m.id, m.supersedes_id, m.content, m.updated_at, c.depth + 1
+        FROM memories m
+        JOIN chain c ON m.id = c.supersedes_id
+       WHERE c.depth < ${HISTORY_DEPTH}
+    )
+    SELECT head_id, content, updated_at, depth FROM chain WHERE depth > 1 ORDER BY head_id, depth
+  `);
+
+  for (const row of rows.rows) {
+    const list = byMemory.get(row.head_id) ?? [];
+    list.push({ content: row.content, supersededAt: new Date(row.updated_at) });
+    byMemory.set(row.head_id, list);
+  }
+  return byMemory;
 }
 
 /**
@@ -392,8 +397,23 @@ export async function explain(memoryId: string, projectScope: { projectId: strin
 
   const versionChain = await getVersionChain(memoryId, projectScope);
 
+  // Writes are append-only, so a memory can be returned by recall() before it
+  // has been judged against its neighbours. Say so explicitly rather than
+  // presenting an unreconciled row as a settled one.
+  const [job] = await db
+    .select({ status: reconciliationJobs.status, attempts: reconciliationJobs.attempts, lastError: reconciliationJobs.lastError })
+    .from(reconciliationJobs)
+    .where(eq(reconciliationJobs.memoryId, memoryId))
+    .limit(1);
+
   return {
     memory,
+    reconciliation: {
+      reconciledAt: memory.reconciledAt,
+      status: memory.reconciledAt ? "done" : job?.status ?? "unqueued",
+      attempts: job?.attempts ?? 0,
+      lastError: job?.lastError ?? null,
+    },
     evidence,
     contradictions: relatedContradictions,
     versions: versionChain?.versions ?? [{ ...memory, changeReasoning: null }],
@@ -432,7 +452,13 @@ export async function getVersionChain(memoryId: string, projectScope: { projectI
   const versions = [root];
   let current = root;
   while (true) {
-    const [next] = await db.select().from(memories).where(eq(memories.supersedesId, current.id)).limit(1);
+    // Ordered so a chain is stable if more than one row ever points here.
+    const [next] = await db
+      .select()
+      .from(memories)
+      .where(eq(memories.supersedesId, current.id))
+      .orderBy(memories.createdAt)
+      .limit(1);
     if (!next) break;
     versions.push(next);
     current = next;
@@ -619,6 +645,7 @@ export async function listMemories(scope: ProjectScope, filters: MemoryFilters =
         importance: memories.importance,
         createdAt: memories.createdAt,
         lastConfirmedAt: memories.lastConfirmedAt,
+        reconciledAt: memories.reconciledAt,
       })
       .from(memories)
       .where(whereClause)

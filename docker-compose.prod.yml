@@ -1,0 +1,75 @@
+# Production-shaped stack: app, database, reconciliation worker.
+#
+#   cp .env.example .env.production && edit it
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# Managed Postgres is the better answer for anything real — this file exists so
+# the whole system can be stood up on one box and so the app image is exercised
+# the same way in staging as in production.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-memora}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-memora}
+    volumes:
+      - memora_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-memora} -d ${POSTGRES_DB:-memora}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Runs migrations to completion before the app is allowed to start, so a
+  # deploy can never serve traffic against a schema it does not expect.
+  migrate:
+    build: .
+    command: sh -c "npx --yes tsx scripts/db-setup.ts"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY:?set VOYAGE_API_KEY}
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET}
+      AUTH_URL: ${AUTH_URL:?set AUTH_URL}
+      VOYAGE_MAX_RPM: ${VOYAGE_MAX_RPM:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  # The API drains its own reconciliation jobs after each response; this covers
+  # retries, backlog, and anything orphaned by a restart. It also prunes the
+  # rate-limit and idempotency tables.
+  reconciler:
+    build: .
+    restart: unless-stopped
+    command: sh -c "npx --yes tsx scripts/reconcile-worker.ts --watch"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY:?set VOYAGE_API_KEY}
+      VOYAGE_MAX_RPM: ${VOYAGE_MAX_RPM:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  memora_pgdata:

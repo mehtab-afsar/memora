@@ -1,0 +1,36 @@
+{
+  "name": "@memora/mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Memora \u2014 long-term memory for coding agents",
+  "type": "module",
+  "bin": {
+    "memora-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "pnpm build"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@memora/client": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.22.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/memora/memora.git",
+    "directory": "packages/mcp"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

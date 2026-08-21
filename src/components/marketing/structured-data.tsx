@@ -1,3 +1,4 @@
+import Script from "next/script";
 import { SITE_URL } from "@/lib/site";
 
 export function StructuredData() {
@@ -28,7 +29,13 @@ export function StructuredData() {
   };
 
   return (
+    // next/script (not a bare <script> tag) — avoids React 19's hydration
+    // warning for inline scripts rendered inside a client-hydrated tree.
     // Our own static copy, not third-party input — safe to serialize directly.
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />
+    <Script
+      id="memora-json-ld"
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
   );
 }

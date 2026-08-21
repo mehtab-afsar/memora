@@ -1,7 +1,11 @@
 /**
  * Inlined (not <img src>) so `currentColor` and the `--brand-accent` custom
  * property actually theme correctly — an externally-referenced SVG can't
- * inherit page CSS. Source: public/brand/memora-recall.svg.
+ * inherit page CSS. Source: public/brand/memora-monogram.svg — picked over
+ * the other five sketches because it's the only one that stays legible at
+ * the sizes this mark actually ships at (20px sidebar/topbar, 16px tight
+ * contexts): 2 shapes, no opacity fades to lose at small size, no theme
+ * variable dependency beyond the accent dot every mark already uses.
  */
 export function BrandMark({ className }: { className?: string }) {
   return (
@@ -15,20 +19,15 @@ export function BrandMark({ className }: { className?: string }) {
       aria-label="MEMORA"
       className={className}
     >
-      <circle cx="32.0" cy="10.0" r="2.1" fill="currentColor" opacity="0.55" />
-      <circle cx="51.05" cy="21.0" r="2.1" fill="currentColor" opacity="0.55" />
-      <circle cx="54.0" cy="32.0" r="2.1" fill="currentColor" opacity="0.55" />
-      <circle cx="51.05" cy="43.0" r="2.1" fill="currentColor" opacity="0.55" />
-      <circle cx="43.0" cy="51.05" r="2.1" fill="currentColor" opacity="0.55" />
-      <circle cx="32.0" cy="54.0" r="2.1" fill="currentColor" opacity="0.55" />
-      <circle cx="21.0" cy="51.05" r="2.1" fill="currentColor" opacity="0.55" />
-      <circle cx="12.95" cy="43.0" r="2.1" fill="currentColor" opacity="0.55" />
-      <circle cx="10.0" cy="32.0" r="2.1" fill="currentColor" opacity="0.55" />
-      <circle cx="12.95" cy="21.0" r="2.1" fill="currentColor" opacity="0.55" />
-      <circle cx="21.0" cy="12.95" r="2.1" fill="currentColor" opacity="0.55" />
-      <circle cx="32.0" cy="32.0" r="3.4" fill="currentColor" />
-      <path d="M35.7 25.59 L39.7 18.66" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" fill="none" />
-      <circle cx="43.0" cy="12.95" r="4.6" fill="var(--brand-accent, #2A78D6)" />
+      <path
+        d="M14 47 V23 L32 39 L50 23 V47"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="4.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="32" cy="39" r="5.6" fill="var(--brand-accent, #2A78D6)" />
     </svg>
   );
 }

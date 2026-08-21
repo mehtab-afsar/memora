@@ -6,10 +6,13 @@ An LLM (Claude) does the reasoning at write time — extracting candidate memori
 
 ## How it works
 
-- **Remember** (`POST /api/v1/memories/remember`) — send free-form text plus a `user_id`. Memora extracts memory candidates, embeds each one, finds nearby existing memories for that user, and asks the LLM to decide: `ADD`, `UPDATE`, `MERGE`, `IGNORE`, or `FLAG` (contradiction).
+- **Remember** (`POST /api/v1/memories/remember`) — send free-form text plus a `user_id`. Memora extracts memory candidates in one LLM call, embeds them in one batched call, writes them all, and returns. Each new memory carries `reconciliation: "pending"`.
+- **Reconciliation** (background) — once the response is sent, every written memory is judged against its nearest neighbours: `ADD`, `UPDATE`, `MERGE`, `IGNORE`, or `FLAG` (contradiction). Versions are linked, restatements retired, contradictions recorded — all with Claude's stated reasoning. The queue is a durable table, drained after each request and by `pnpm reconcile` for retries and backlog, so judgement never sits between a caller and their response.
 - **Recall** (`POST /api/v1/memories/recall`) — send a `user_id` and a `query`. Memora embeds the query, finds the nearest active memories, and ranks them with a weighted score: semantic similarity (60%), confidence (25%), and freshness/recency (15%).
 - **Explain** (`GET /api/v1/memories/:id/explain`) — returns a memory's full evidence trail and version history (every edit creates a new version linked via `supersedesId`; nothing is silently overwritten).
 - **Verify** (`POST /api/v1/memories/:id/verify`) — asks the LLM to re-assess a memory's confidence/status given its age and evidence count.
+
+Because writes are append-only, a fact and a newer restatement of it can both be active for the moments before reconciliation runs. `recall` collapses results by version chain and by near-duplicate similarity, so a caller sees one memory per fact either way.
 
 Memories carry a `type` (`preference`, `fact`, `goal`, `relationship`, `event`, `instruction`, `decision`, `context`) and a `status` (`active`, `stale`, `superseded`, `archived`, `flagged`). Every write — extraction, reconfirmation, version update, manual edit, verification — is recorded as evidence, so any memory's history can be reconstructed from the dashboard.
 
@@ -38,13 +41,47 @@ Memories carry a `type` (`preference`, `fact`, `goal`, `relationship`, `event`, 
 3. Install dependencies and run migrations:
    ```bash
    pnpm install
-   pnpm drizzle-kit migrate
+   pnpm db:setup
    ```
 4. Start the dev server:
    ```bash
    pnpm dev
    ```
 5. Open [http://localhost:3000](http://localhost:3000), sign up, create a project and environment, and generate an API key from the dashboard.
+
+## Client library
+
+```bash
+npm install @memora/client
+```
+
+```ts
+import { Memora } from "@memora/client";
+
+const memora = new Memora({ apiKey: process.env.MEMORA_API_KEY! });
+
+await memora.remember({ userId: "user_123", content: "I prefer dark mode." });
+
+const { results } = await memora.recall({ userId: "user_123", query: "ui preferences" });
+```
+
+Source in [`packages/sdk`](packages/sdk). Every result carries `reason`, `matchedOn` and
+`status`, so an application can show *why* a memory came back — and flag the ones that
+contradict something else rather than presenting them as settled.
+
+## Development
+
+```bash
+pnpm test        # unit tests — no database, no network, no spend
+pnpm typecheck
+pnpm lint
+pnpm eval        # scores the pipeline end to end against evals/datasets (costs money)
+pnpm smoke       # end-to-end check against a running dev server
+pnpm reconcile   # drain the reconciliation queue (--watch to keep running)
+```
+
+`pnpm eval` is the scoreboard: accuracy by category, latency, provider calls per
+operation and dollars per 1,000 memories. See [`evals/README.md`](evals/README.md).
 
 ## Example API usage
 

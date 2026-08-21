@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useTheme } from "next-themes";
-import { Moon, Sun, Laptop, LogOut, User as UserIcon, Layers, Check } from "lucide-react";
+import { useTheme, type Theme } from "@/components/theme-provider";
+import { Moon, Sun, Laptop, Layers, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,28 +15,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { signOutAction } from "@/lib/auth-actions";
 
 type Environment = { id: string; name: string };
-type SessionUser = { id: string; email?: string | null; name?: string | null };
 
 export function DashboardTopbar({
   environments,
-  user,
+  mobileNav,
 }: {
   environments: Environment[];
-  user: SessionUser;
+  mobileNav?: React.ReactNode;
 }) {
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background px-6">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background px-4 md:px-6">
       <div className="flex items-center gap-3">
+        {mobileNav}
         <Suspense fallback={<div className="h-8 w-32 animate-pulse rounded-md bg-muted" />}>
           <EnvironmentSwitcher environments={environments} />
         </Suspense>
       </div>
       <div className="flex items-center gap-1.5">
         <ThemeToggle />
-        <UserMenu user={user} />
       </div>
     </header>
   );
@@ -85,7 +83,7 @@ function EnvironmentSwitcher({ environments }: { environments: Environment[] }) 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
-  const options: { value: string; icon: typeof Sun; label: string }[] = [
+  const options: { value: Theme; icon: typeof Sun; label: string }[] = [
     { value: "light", icon: Sun, label: "Light" },
     { value: "dark", icon: Moon, label: "Dark" },
     { value: "system", icon: Laptop, label: "System" },
@@ -107,40 +105,6 @@ function ThemeToggle() {
             {theme === opt.value && <Check className="size-3.5 text-primary" />}
           </DropdownMenuItem>
         ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-function UserMenu({ user }: { user: SessionUser }) {
-  const label = user.name || user.email || "Account";
-  const initial = label.charAt(0).toUpperCase();
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="rounded-full" aria-label="Account menu" />}>
-        <span className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
-          {initial}
-        </span>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel className="flex items-center gap-2 font-normal text-muted-foreground">
-            <UserIcon className="size-3.5" />
-            <span className="truncate">{user.email}</span>
-          </DropdownMenuLabel>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant="destructive"
-          onSelect={(e) => {
-            e.preventDefault();
-            void signOutAction();
-          }}
-        >
-          <LogOut className="size-3.5" />
-          Sign out
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

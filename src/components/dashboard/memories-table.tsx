@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TypeBadge } from "@/components/dashboard/type-badge";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { ReconcilingChip } from "@/components/dashboard/reconciling-chip";
 import { ConfidenceMeter } from "@/components/dashboard/confidence-meter";
 import { formatRelativeTime } from "@/lib/format";
 
@@ -15,6 +16,7 @@ type MemoryRow = {
   status: string;
   confidence: number;
   lastConfirmedAt: Date;
+  reconciledAt: Date | null;
 };
 
 export function MemoriesTable({ memories, basePath }: { memories: MemoryRow[]; basePath: string }) {
@@ -54,7 +56,10 @@ export function MemoriesTable({ memories, basePath }: { memories: MemoryRow[]; b
                 <TypeBadge type={m.type} />
               </TableCell>
               <TableCell>
-                <StatusBadge status={m.status} />
+                <div className="flex items-center gap-1.5">
+                  <StatusBadge status={m.status} />
+                  {m.reconciledAt === null && <ReconcilingChip status="pending" />}
+                </div>
               </TableCell>
               <TableCell>
                 <ConfidenceMeter value={m.confidence} />

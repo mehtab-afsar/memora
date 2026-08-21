@@ -1,0 +1,148 @@
+{
+  "name": "golden",
+  "description": "A small hand-built set that stresses the behaviours Memora claims: facts that change over time, facts that must be combined, exact identifiers, contradictions, restatements, and questions the system should refuse to answer. Small enough to run for cents on every write-path change, and categorised like LoCoMo so its numbers sit next to the public benchmarks.",
+  "cases": [
+    {
+      "id": "dietary",
+      "userId": "eval_dietary",
+      "sessions": [
+        "I've been vegan for about three years now. Also, I really can't stand cilantro — it tastes like soap to me.",
+        "Booked that Thai place for Friday. I asked them to leave the cilantro off everything."
+      ],
+      "questions": [
+        {
+          "q": "What are the user's dietary restrictions?",
+          "gold": "The user is vegan and dislikes cilantro.",
+          "category": "single-hop"
+        },
+        {
+          "q": "Can I recommend a beef dish to this user?",
+          "gold": "No — the user is vegan.",
+          "category": "single-hop"
+        }
+      ]
+    },
+    {
+      "id": "job-change",
+      "userId": "eval_job_change",
+      "sessions": [
+        "I work as a data analyst at Northwind Logistics. Been there two years.",
+        "Quick update: I left Northwind last month. I started as a staff engineer at Cobalt Labs on the platform team."
+      ],
+      "questions": [
+        {
+          "q": "Where does the user work?",
+          "gold": "Cobalt Labs, as a staff engineer on the platform team.",
+          "category": "temporal"
+        },
+        {
+          "q": "What is the user's current job title?",
+          "gold": "Staff engineer.",
+          "category": "temporal"
+        },
+        {
+          "q": "Has the user ever worked at Northwind Logistics?",
+          "gold": "Yes, previously, as a data analyst — they left.",
+          "category": "temporal"
+        }
+      ]
+    },
+    {
+      "id": "family-travel",
+      "userId": "eval_family_travel",
+      "sessions": [
+        "My sister Priya moved to Lisbon last year. She loves it there.",
+        "I always take the last two weeks of December off to visit family.",
+        "I hate long-haul flights, anything over six hours wrecks me."
+      ],
+      "questions": [
+        {
+          "q": "Where is the user likely to travel in December?",
+          "gold": "Lisbon, to visit their sister Priya.",
+          "category": "multi-hop"
+        },
+        {
+          "q": "Should I suggest a fifteen-hour flight itinerary to this user?",
+          "gold": "No — the user dislikes flights longer than about six hours.",
+          "category": "multi-hop"
+        }
+      ]
+    },
+    {
+      "id": "infra-identifiers",
+      "userId": "eval_infra",
+      "sessions": [
+        "Our production cluster is called atlas-prod-7 and the staging one is atlas-stg-2. Don't mix them up.",
+        "The on-call rotation for atlas-prod-7 is handled by the platform team, and alerts go to #plat-oncall."
+      ],
+      "questions": [
+        {
+          "q": "What is the staging cluster called?",
+          "gold": "atlas-stg-2",
+          "category": "exact-string"
+        },
+        {
+          "q": "Which Slack channel do production alerts go to?",
+          "gold": "#plat-oncall",
+          "category": "exact-string"
+        }
+      ]
+    },
+    {
+      "id": "allergy-conflict",
+      "userId": "eval_allergy",
+      "sessions": [
+        "I'm allergic to peanuts — it's serious, I carry an EpiPen.",
+        "Had a peanut butter sandwich for lunch today and it was delicious."
+      ],
+      "questions": [
+        {
+          "q": "Does the user have a peanut allergy?",
+          "gold": "A peanut allergy is recorded, but a later statement conflicts with it — the conflict should be surfaced rather than silently resolved.",
+          "category": "contradiction"
+        }
+      ]
+    },
+    {
+      "id": "restatement",
+      "userId": "eval_restatement",
+      "sessions": [
+        "I prefer dark mode in every app I use.",
+        "By the way, I always switch interfaces to dark mode.",
+        "Dark mode, always — light themes give me a headache."
+      ],
+      "questions": [
+        {
+          "q": "What theme does the user prefer?",
+          "gold": "Dark mode.",
+          "category": "single-hop"
+        }
+      ]
+    },
+    {
+      "id": "unknowable",
+      "userId": "eval_unknowable",
+      "sessions": [
+        "I live in Berlin and I bike to work most days.",
+        "I've been learning Portuguese on and off for a year."
+      ],
+      "questions": [
+        {
+          "q": "What car does the user drive?",
+          "gold": "Unknown — nothing recorded about a car. The correct answer is to say so.",
+          "category": "abstain"
+        },
+        {
+          "q": "What is the user's partner's name?",
+          "gold": "Unknown — nothing recorded about a partner. The correct answer is to say so.",
+          "category": "abstain"
+        },
+        {
+          "q": "Where does the user live?",
+          "gold": "Berlin.",
+          "category": "single-hop"
+        }
+      ]
+    }
+  ]
+}

@@ -5,12 +5,23 @@ import { recordUsage } from "@/lib/usage-tracking";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const MODEL = "claude-sonnet-5";
+/**
+ * The model behind extraction, decisioning and verification. Overridable so the
+ * eval harness can price and score the same pipeline on a cheaper model without
+ * a code change (MEMORA_MODEL=claude-haiku-4-5 pnpm eval).
+ */
+const MODEL = process.env.MEMORA_MODEL ?? "claude-sonnet-5";
+
+export function activeModel(): string {
+  return MODEL;
+}
 
 async function callTool<T>(system: string, userMessage: string, tool: Tool): Promise<T> {
   const response = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 2048,
+    // Current models think by default and thinking draws on this budget, so a
+    // tight ceiling truncates the tool call and loses the whole decision.
+    max_tokens: 8192,
     system,
     messages: [{ role: "user", content: userMessage }],
     tools: [tool],
@@ -26,7 +37,9 @@ async function callTool<T>(system: string, userMessage: string, tool: Tool): Pro
 
   const toolUse = response.content.find((block) => block.type === "tool_use");
   if (!toolUse || toolUse.type !== "tool_use") {
-    throw new Error(`Anthropic did not return a ${tool.name} tool call`);
+    throw new Error(
+      `Anthropic did not return a ${tool.name} tool call (stop_reason: ${response.stop_reason})`
+    );
   }
   return toolUse.input as T;
 }
@@ -56,14 +69,16 @@ Memory types:
 - context: background information useful for future interactions that doesn't fit the above
 
 Importance/confidence rubric — this is the most important part of your job:
-- Casual, throwaway, or purely reactive remarks ("lol nice", "Ferrari looks cool", "that's funny") are NOT memories. Extract nothing for them.
+- Casual, throwaway, or purely reactive remarks ("lol nice", "Ferrari looks cool", "that's funny"), acknowledgements ("ok, thanks"), and small talk about the world rather than the user (the weather, the news) are NOT memories. Extract nothing for them.
 - A statement is only worth remembering if it plausibly holds true beyond this single exchange, and would materially help a future interaction with this user.
+- An ordinary event IS worth extracting when it is evidence about something durable: what the user consumes, can or cannot do, owns, uses, or is constrained by. "Had a peanut butter sandwich for lunch" is a forgettable lunch and a significant fact about someone's diet; "drove the kids to school" says they have a car and children. Record these as type "event" with modest importance and let the next stage decide what they mean. You cannot see what is already known about this user, so a statement that would confirm or contradict a standing fact is not yours to discard — extracting it costs little, because a redundant one is retired downstream, while dropping it makes a contradiction undetectable forever.
 - importance (0-1): how much this would matter to get right in a future interaction. Trivial detail -> low. Core fact/goal/preference -> high.
 - confidence (0-1): how certain you are this is actually true and durable, based on how it was stated. An explicit, direct statement ("I use TypeScript") -> high. An inference or hedge ("might be into TypeScript") -> lower.
 - A single input may contain zero, one, or multiple candidate memories. Extract each fact/preference/etc. separately rather than combining unrelated statements into one.
 - Normalize each candidate's content into a clear third-person statement about the user (e.g. "Prefers concise responses" not "I like it when you're brief").
+- Anchor time. If the input carries a date or timestamp, resolve every relative reference against it and write the absolute date into the memory: "yesterday" in text dated 8 May 2023 becomes "on 7 May 2023", "last year" becomes the year, "next weekend" becomes the dates. A memory that says "yesterday" is unreadable a week later, and a date left in the source text is not recoverable once the text is gone. If the input carries no date, keep the original phrasing and invent nothing — a guessed date is a false memory.
 
-When in doubt about whether something is durable enough to remember, err toward NOT extracting it — false memories are worse than missed ones.`;
+When in doubt, distinguish the two cases: for a reaction, an acknowledgement, or a remark about the world, err toward NOT extracting — a false memory is worse than a missed one. For a statement about the user themselves, however ordinary, err toward extracting it, and let the next stage decide whether it is new, redundant or contradictory.`;
 
 const extractMemoriesTool: Tool = {
   name: "extract_memories",
@@ -138,6 +153,8 @@ const DECIDE_SYSTEM_PROMPT = `You decide how a new candidate memory relates to a
 - MERGE: the candidate adds detail to an existing memory without replacing it (e.g. "likes Python" + "especially for data science"). Set target_memory_id and merged_content (the full, combined statement).
 - IGNORE: the candidate is a redundant restatement of an existing memory with no new information, OR is itself too trivial to be worth persisting. These are different cases: if it's a redundant restatement of a specific existing memory, set target_memory_id to that memory's id (this counts as a reconfirmation of it). If it's simply too trivial to persist at all, leave target_memory_id null.
 - FLAG: the candidate CONTRADICTS an existing memory with opposing valence on the same subject (e.g. "prefers Python" vs "hates Python") and you cannot confidently tell which is current. Set contradiction.detected=true, contradiction.conflicting_memory_id to the conflicting memory's id, and explain the conflict in contradiction.reasoning.
+
+FLAG is not a bucket for uncertainty. Use it only when both statements cannot be true of the user at the same time. Two memories that are merely related, or that sit on the same topic, or that you suspect might imply a change without saying so, are an ADD. If your own reasoning contains a phrase like "not necessarily contradictory" or "worth reviewing", the answer is ADD, not FLAG. Flagging marks BOTH memories as unresolved and puts them in front of a human, so a false flag is more costly than a missed one.
 
 Only ADD, UPDATE, or MERGE should be used when you are NOT flagging a contradiction — contradiction.detected must be false in those cases (except UPDATE, where a value clearly superseding an old one is a normal update, not a contradiction, since it's a change over time rather than two claims that can't both be true right now).
 

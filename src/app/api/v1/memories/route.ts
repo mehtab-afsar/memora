@@ -6,7 +6,7 @@ const STATUS_VALUES = new Set(memoryStatusEnum.enumValues);
 const TYPE_VALUES = new Set(memoryTypeEnum.enumValues);
 
 export async function GET(request: Request) {
-  return withApiKey(request, async (ctx) => {
+  return withApiKey(request, { scope: "read" }, async (ctx) => {
     const url = new URL(request.url);
     const userId = url.searchParams.get("user_id");
     const status = url.searchParams.get("status");
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  return withApiKey(request, async (ctx) => {
+  return withApiKey(request, { scope: "write" }, async (ctx) => {
     const url = new URL(request.url);
     const userId = url.searchParams.get("user_id");
     if (!userId) {

@@ -5,6 +5,7 @@ import { getProjectInOrg } from "@/lib/org";
 import { explain, getMemoryInProject } from "@/lib/memory-engine";
 import { TypeBadge } from "@/components/dashboard/type-badge";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { ReconcilingChip } from "@/components/dashboard/reconciling-chip";
 import { ConfidenceMeter } from "@/components/dashboard/confidence-meter";
 import { MemoryActions } from "@/components/dashboard/memory-actions";
 import { VersionTimeline } from "@/components/dashboard/version-timeline";
@@ -61,6 +62,11 @@ export default async function MemoryDetailPage({
         <div className="mt-4 flex flex-wrap items-center gap-4">
           <TypeBadge type={memory.type} />
           <StatusBadge status={memory.status} />
+          {detail?.reconciliation.status !== "done" && (
+            <ReconcilingChip
+              status={detail?.reconciliation.status === "failed" ? "failed" : "pending"}
+            />
+          )}
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             Confidence
             <ConfidenceMeter value={memory.confidence} />
@@ -75,6 +81,11 @@ export default async function MemoryDetailPage({
           <span>End user: <span className="font-mono text-foreground">{memory.endUserId}</span></span>
           <span>First observed {formatRelativeTime(memory.createdAt)}</span>
           <span>Last confirmed {formatRelativeTime(memory.lastConfirmedAt)}</span>
+          {detail?.reconciliation.reconciledAt ? (
+            <span>Reconciled {formatRelativeTime(detail.reconciliation.reconciledAt)}</span>
+          ) : (
+            <span>Not yet reconciled</span>
+          )}
         </div>
 
         <div className="mt-5 border-t border-border pt-4">
