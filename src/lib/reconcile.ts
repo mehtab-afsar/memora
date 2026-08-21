@@ -173,15 +173,26 @@ export async function reconcileMemory(memoryId: string): Promise<ReconcileResult
       // "this version replaced that one" and drives the version chain, and a
       // restatement is not a new version. The link lives in metadata instead.
       //
-      // Without a target: the decider judged the candidate too trivial to keep
-      // at all. Leaving it active would mean persisting something the system
-      // just declared not worth persisting — and would throw away the cleanest
-      // negative example extraction ever gets. See src/lib/feedback.ts.
+      // Without a target: the decider judged the candidate too trivial to keep.
+      // We record that judgement but do NOT act on it, and the difference cost
+      // ten points on the benchmark to learn.
+      //
+      // Archiving these looked obviously right — why persist what the system
+      // just called worthless? It removed 26 of 210 memories from one LoCoMo
+      // conversation and took accuracy from 75% to 65%, with two new failures
+      // and none fixed. Both were qualifying details ("what type of individuals
+      // does the agency support?") that reconciliation had waved away as minor
+      // and a later question turned out to need.
+      //
+      // So the judgement is not reliable enough to remove a memory from
+      // retrieval. It is still worth recording: the feedback loop reads it as a
+      // negative example for extraction (src/lib/feedback.ts), where being
+      // wrong costs a slightly worse prompt rather than an unanswerable
+      // question.
       if (!decision.target_memory_id) {
         await db
           .update(memories)
           .set({
-            status: "archived",
             metadata: { ...metadata, discarded: "trivial" },
             updatedAt: now,
           })
@@ -192,7 +203,7 @@ export async function reconcileMemory(memoryId: string): Promise<ReconcileResult
           sourceId: memory.sourceId,
           excerpt: memory.content,
           eventType: "updated",
-          reasoning: `Discarded as too trivial to persist. ${decision.reasoning}`,
+          reasoning: `Judged marginal, kept and retrievable. ${decision.reasoning}`,
         });
         break;
       }

@@ -81,7 +81,10 @@ async function discardedExamples(projectId: string): Promise<ExtractionExample[]
     .where(
       and(
         eq(memories.projectId, projectId),
-        eq(memories.status, "archived"),
+        // Not filtered on status: a memory judged trivial stays active and
+        // retrievable — removing those cost ten points on the benchmark — so
+        // the marker in metadata is the signal, not the row's status.
+        //
         // `restatement` is excluded on purpose. A user repeating themselves is
         // not an extraction error — extraction was right to pick it up both
         // times, and reconciliation was right to retire the duplicate.
