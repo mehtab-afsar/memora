@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:setup": "tsx scripts/db-setup.ts",
+    "db:check": "tsx scripts/db-check.ts",
     "build:packages": "pnpm --filter @memora/client build && pnpm --filter @memora/mcp build",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -41,6 +41,54 @@ dependencies reached through symlinks — `@swc/helpers` is the first to surface
 as a `MODULE_NOT_FOUND` **at boot**, not at build. Hoisting inside the image
 fixes it. Do not remove that line without booting the built image.
 
+## Supabase
+
+Supabase is Postgres with pgvector available, which is all Memora needs. It does
+**not** use Supabase Auth, the REST API, realtime, storage or row-level security
+— the dashboard has its own auth, and every query goes through the connection
+string. The publishable/anon key is not used anywhere and is not what you need
+here; the connection string is.
+
+### Use the pooler, not the direct connection
+
+Supabase gives you two:
+
+| | Host | Port | Use |
+|---|---|---|---|
+| Direct | `db.<ref>.supabase.co` | 5432 | **Avoid.** Resolves to IPv6 only. |
+| Supavisor, session | `aws-0-<region>.pooler.supabase.com` | 5432 | Migrations, and the app |
+| Supavisor, transaction | `aws-0-<region>.pooler.supabase.com` | 6543 | App only, at higher connection counts |
+
+The direct host is IPv6-only. It works from a machine with IPv6 egress and times
+out from one without — which includes most CI runners and many container hosts,
+and presents as a connection timeout that looks like a firewall problem. Use the
+pooler unless you have a specific reason not to.
+
+Session mode (5432) behaves like an ordinary Postgres connection and is the
+simplest correct choice. Transaction mode (6543) scales to far more clients but
+does not support session state, so run **migrations against session mode** even
+if the app uses transaction mode.
+
+### Setting it up
+
+```bash
+# Settings -> Database -> Connection string -> Session pooler
+export DATABASE_URL='postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres'
+
+pnpm db:check    # connection, pgvector, schema, permissions — says what is wrong
+pnpm db:setup    # enable pgvector, then migrate
+pnpm db:check    # confirm
+```
+
+`db:setup` installs pgvector into Supabase's `extensions` schema, which is where
+Supabase keeps them, and then proves the type actually resolves. Installing an
+extension and being able to *use* it are different things: if its schema is not
+on the role's `search_path`, migrations fail with "type vector does not exist"
+and nothing tells you why.
+
+Set `DATABASE_POOL_MAX` with the plan's connection limit in mind — every app
+instance and every worker opens its own pool.
+
 ## Health
 
 `GET /api/v1/health` returns 200 with `{"status":"ok","database":"ok"}`, or 503

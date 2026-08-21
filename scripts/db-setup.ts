@@ -20,14 +20,29 @@ async function main() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
   try {
-    for (const extension of ["vector"]) {
-      await pool.query(`CREATE EXTENSION IF NOT EXISTS ${extension}`);
-      console.log(`[db:setup] extension ready: ${extension}`);
-    }
+    // Supabase (and some other managed providers) keep extensions in their own
+    // schema rather than public. Install there when it exists, so we match the
+    // provider's convention instead of fighting it.
+    const { rows } = await pool.query(
+      `select 1 from information_schema.schemata where schema_name = 'extensions'`
+    );
+    const target = rows.length > 0 ? " with schema extensions" : "";
+
+    await pool.query(`CREATE EXTENSION IF NOT EXISTS vector${target}`);
+    console.log(`[db:setup] extension ready: vector${target || " (public schema)"}`);
+
+    // Installing it is not the same as being able to use it: if the schema is
+    // not on the search path, `vector(1024)` in a migration fails with an
+    // unhelpful "type does not exist". Prove it resolves before migrating.
+    await pool.query(`select '[1,2,3]'::vector`);
+    console.log("[db:setup] vector type resolves on the current search_path");
   } catch (error) {
     console.error(
-      `[db:setup] could not create extensions. On managed Postgres the ` +
-        `extension may need enabling by the provider, or by a role with rights to do it.`
+      `[db:setup] could not prepare extensions. On managed Postgres the extension ` +
+        `may need enabling by the provider, or by a role with rights to do it. ` +
+        `If it installed but the type does not resolve, add its schema to the ` +
+        `search_path for this role:\n` +
+        `  alter role <role> set search_path = public, extensions;`
     );
     throw error;
   } finally {

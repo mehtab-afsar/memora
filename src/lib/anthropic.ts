@@ -3,7 +3,13 @@ import type { Tool } from "@anthropic-ai/sdk/resources/messages";
 import { MEMORY_TYPES, type MemoryType } from "@/lib/memory-types";
 import { recordUsage } from "@/lib/usage-tracking";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  // The SDK retries connection errors and 429/5xx on its own. Two is its
+  // default; three costs nothing when nothing goes wrong and covers the
+  // transient 500s we have actually seen.
+  maxRetries: 3,
+});
 
 /**
  * The model behind extraction, decisioning and verification. Overridable so the
@@ -16,7 +22,41 @@ export function activeModel(): string {
   return MODEL;
 }
 
+/**
+ * How many times a call is retried for a *malformed* response, on top of the
+ * SDK's own transport-level retries.
+ *
+ * Two different failures need covering and only one of them is the SDK's.
+ * A 500 or a dropped connection never reaches us — the SDK retries it. But a
+ * 200 carrying a truncated or mangled tool call does, and we have seen three
+ * of those in a day: a field name that came back as "corr...ect", a memory
+ * whose entire content was the word "test", and a decision with no verdict.
+ * Those are indistinguishable from success at the transport layer and have to
+ * be caught here.
+ */
+const MALFORMED_RESPONSE_ATTEMPTS = 3;
+
 async function callTool<T>(system: string, userMessage: string, tool: Tool, model = MODEL): Promise<T> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < MALFORMED_RESPONSE_ATTEMPTS; attempt++) {
+    try {
+      return await callToolOnce<T>(system, userMessage, tool, model);
+    } catch (error) {
+      // Only a malformed response is worth asking again for. Anything else —
+      // a bad key, an invalid request, a spent quota — will fail identically
+      // however many times we try, and retrying only wastes money.
+      if (!(error instanceof MalformedToolResponse)) throw error;
+      lastError = error;
+    }
+  }
+
+  throw lastError ?? new Error(`${tool.name} failed`);
+}
+
+class MalformedToolResponse extends Error {}
+
+async function callToolOnce<T>(system: string, userMessage: string, tool: Tool, model: string): Promise<T> {
   const response = await anthropic.messages.create({
     model,
     // Current models think by default and thinking draws on this budget, so a
@@ -37,7 +77,7 @@ async function callTool<T>(system: string, userMessage: string, tool: Tool, mode
 
   const toolUse = response.content.find((block) => block.type === "tool_use");
   if (!toolUse || toolUse.type !== "tool_use") {
-    throw new Error(
+    throw new MalformedToolResponse(
       `Anthropic did not return a ${tool.name} tool call (stop_reason: ${response.stop_reason})`
     );
   }
