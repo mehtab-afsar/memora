@@ -37,6 +37,8 @@ export type MemoryScoreInput = {
   confidence: number;
   lastConfirmedAt: Date;
   now?: Date;
+  /** How the question was routed. Selects the weighting; defaults to `specific`. */
+  kind?: QueryKind;
   /**
    * Where the row placed in each retrieval pass. When present, the fused rank
    * drives the match term instead of raw cosine similarity, so a row found by
@@ -57,13 +59,12 @@ export type MemoryScore = {
 export function scoreMemory(input: MemoryScoreInput): MemoryScore {
   const { similarity, confidence, lastConfirmedAt, ranks } = input;
   const now = input.now ?? new Date();
+  const weights = weightsFor(input.kind);
 
   const freshness = decay(now.getTime() - lastConfirmedAt.getTime(), MEMORY_FRESHNESS_DECAY_DAYS);
   const match = ranks ? fuseRanks(ranks) : similarity;
   const relevanceScore =
-    MEMORY_RECALL_WEIGHTS.similarity * match +
-    MEMORY_RECALL_WEIGHTS.confidence * confidence +
-    MEMORY_RECALL_WEIGHTS.freshness * freshness;
+    weights.similarity * match + weights.confidence * confidence + weights.freshness * freshness;
 
   return {
     similarity,
@@ -152,6 +153,57 @@ export function fuseRanks({ vectorRank, keywordRank }: RankedLists): number {
 export function matchKind({ vectorRank, keywordRank }: RankedLists): "both" | "meaning" | "keyword" {
   if (vectorRank !== null && keywordRank !== null) return "both";
   return vectorRank !== null ? "meaning" : "keyword";
+}
+
+// ---------------------------------------------------------------------------
+// Query-aware weighting
+// ---------------------------------------------------------------------------
+
+export type QueryKind = "temporal" | "identifier" | "profile" | "multi-hop" | "specific";
+
+/**
+ * Different questions want different things from the same three signals.
+ *
+ * "When did she move?" is answered by the memory that carries the date, which is
+ * rarely the one with the best cosine similarity — recency and match matter,
+ * confidence barely does. "What is the staging cluster called?" is answered by a
+ * literal string match and nothing else. Ranking all of them identically is why
+ * temporal scored 50% on the benchmark while identifier lookups scored 100%.
+ *
+ * Weights always sum to 1 so scores stay comparable across kinds.
+ */
+export const WEIGHTS_BY_KIND: Record<QueryKind, typeof MEMORY_RECALL_WEIGHTS> = {
+  // The default, and what every query used to get.
+  specific: { similarity: 0.6, confidence: 0.25, freshness: 0.15 },
+  // "When did X happen?" is answered by the memory whose *text* carries the
+  // date. Freshness is how recently a memory was last confirmed, which is a
+  // different thing entirely and near-irrelevant here — a first instinct to
+  // raise it for temporal queries is backwards, and biases toward recently
+  // reconfirmed memories over the one holding the answer.
+  //
+  // This cannot be fixed with weights alone. At any meaningful freshness weight
+  // a two-hundred-day-old memory is penalised more than a better text match can
+  // recover, so the only honest setting is one that leans almost entirely on
+  // matching the question's text — which is where the date actually lives.
+  // Ranking by event time properly needs an `occurred_at` column we do not yet
+  // have (see docs/ai-native-plan.md); this is a stopgap that stops recency
+  // actively burying the answer.
+  temporal: { similarity: 0.9, confidence: 0.05, freshness: 0.05 },
+  // A literal match is nearly the whole answer. Fusion already puts keyword
+  // hits first; this stops confidence and freshness dragging them back down.
+  identifier: { similarity: 0.85, confidence: 0.1, freshness: 0.05 },
+  // Open-ended: the profile carries the shape of the person, so the ranked
+  // memories should favour what is durable and certain over what is merely
+  // similar to a vague question.
+  profile: { similarity: 0.4, confidence: 0.4, freshness: 0.2 },
+  // The bridging fact is often an old, quiet one — a sibling's name mentioned
+  // once, a year ago, never repeated. Recency is not just unhelpful here, it
+  // buries exactly the memory the second hop needs.
+  "multi-hop": { similarity: 0.78, confidence: 0.2, freshness: 0.02 },
+};
+
+export function weightsFor(kind: QueryKind = "specific") {
+  return WEIGHTS_BY_KIND[kind] ?? WEIGHTS_BY_KIND.specific;
 }
 
 // ---------------------------------------------------------------------------

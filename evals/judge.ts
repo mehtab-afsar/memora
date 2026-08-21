@@ -71,6 +71,7 @@ Rules:
 - Use ONLY the memories provided. Do not use outside knowledge or guess.
 - If the memories do not answer the question, say you do not know. Never invent a plausible answer.
 - If two memories conflict, say so and give both, rather than silently picking one.
+- A profile may be supplied: a short synthesis of everything known about the user. Treat it as equal in standing to the memories — it is derived from them.
 - A memory may carry what it "previously" said. That is what used to be true — use it to answer questions about the past, and never as the current value.
 - Be brief: one or two sentences.`;
 
@@ -82,7 +83,8 @@ export async function answerFromMemories(
     type: string;
     relevanceScore: number;
     history?: { content: string }[];
-  }[]
+  }[],
+  profile: string | null = null
 ): Promise<string> {
   const rendered =
     memories.length === 0
@@ -94,10 +96,12 @@ export async function answerFromMemories(
           })
           .join("\n");
 
+  const profileBlock = profile ? `Profile of this user:\n${profile}\n\n` : "";
+
   const { answer } = await callTool<{ answer: string }>(
     model,
     ANSWER_SYSTEM,
-    `Memories:\n${rendered}\n\nQuestion: ${question}`,
+    `${profileBlock}Memories:\n${rendered}\n\nQuestion: ${question}`,
     ANSWER_TOOL
   );
   return answer;

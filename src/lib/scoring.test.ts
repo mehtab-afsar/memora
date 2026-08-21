@@ -11,6 +11,8 @@ import {
   MEMORY_RECALL_WEIGHTS,
   scoreExperience,
   scoreMemory,
+  weightsFor,
+  WEIGHTS_BY_KIND,
 } from "@/lib/scoring";
 
 const DAY = 1000 * 60 * 60 * 24;
@@ -175,6 +177,75 @@ describe("scoreMemory with rank fusion", () => {
     const without = scoreMemory({ similarity: 0.5, confidence: 0, lastConfirmedAt: NOW, now: NOW });
     expect(withRanks.relevanceScore).not.toBeCloseTo(without.relevanceScore, 4);
     expect(without.relevanceScore).toBeCloseTo(0.6 * 0.5 + 0.15, 10);
+  });
+});
+
+describe("query-aware weighting", () => {
+  it("keeps every kind's weights summing to one, so scores stay comparable", () => {
+    for (const kind of Object.keys(WEIGHTS_BY_KIND) as (keyof typeof WEIGHTS_BY_KIND)[]) {
+      const w = WEIGHTS_BY_KIND[kind];
+      expect(w.similarity + w.confidence + w.freshness).toBeCloseTo(1, 10);
+    }
+  });
+
+  it("falls back to the uniform weighting for an unknown kind", () => {
+    expect(weightsFor(undefined)).toEqual(WEIGHTS_BY_KIND.specific);
+    expect(weightsFor("nonsense" as "specific")).toEqual(WEIGHTS_BY_KIND.specific);
+  });
+
+  it("stops recency burying the memory that holds the date", () => {
+    // Freshness is how recently a memory was *confirmed*, not how relevant its
+    // date is. Raising it for temporal questions — the obvious first move — is
+    // backwards: it promotes whatever was mentioned most recently over the
+    // memory carrying the answer.
+    const dated = { similarity: 0.7, confidence: 0.7, lastConfirmedAt: daysAgo(200), now: NOW };
+    const recentButVaguer = { similarity: 0.6, confidence: 0.95, lastConfirmedAt: NOW, now: NOW };
+
+    expect(scoreMemory({ ...dated, kind: "specific" }).relevanceScore)
+      .toBeLessThan(scoreMemory({ ...recentButVaguer, kind: "specific" }).relevanceScore);
+    expect(scoreMemory({ ...dated, kind: "temporal" }).relevanceScore)
+      .toBeGreaterThan(scoreMemory({ ...recentButVaguer, kind: "temporal" }).relevanceScore);
+  });
+
+  it("weights freshness lowest exactly where recency misleads", () => {
+    // Both kinds ask about things that happened, where "confirmed recently" is
+    // not evidence of being the right answer.
+    expect(WEIGHTS_BY_KIND["multi-hop"].freshness).toBeLessThan(WEIGHTS_BY_KIND.specific.freshness);
+    expect(WEIGHTS_BY_KIND.temporal.freshness).toBeLessThan(WEIGHTS_BY_KIND.specific.freshness);
+  });
+
+  it("stops confidence dragging down a literal match on an identifier lookup", () => {
+    const literalHit = { similarity: 0.95, confidence: 0.5, lastConfirmedAt: daysAgo(120), now: NOW };
+    const confidentNeighbour = { similarity: 0.7, confidence: 1, lastConfirmedAt: NOW, now: NOW };
+
+    const gapUniform =
+      scoreMemory({ ...literalHit, kind: "specific" }).relevanceScore -
+      scoreMemory({ ...confidentNeighbour, kind: "specific" }).relevanceScore;
+    const gapIdentifier =
+      scoreMemory({ ...literalHit, kind: "identifier" }).relevanceScore -
+      scoreMemory({ ...confidentNeighbour, kind: "identifier" }).relevanceScore;
+
+    expect(gapIdentifier).toBeGreaterThan(gapUniform);
+  });
+
+  it("lets an old quiet fact bridge a multi-hop question", () => {
+    // "Where does his sister live?" needs the sibling's name, mentioned once a
+    // year ago. Freshness actively hurts there.
+    const oldBridge = { similarity: 0.8, confidence: 0.8, lastConfirmedAt: daysAgo(400), now: NOW };
+    const freshNoise = { similarity: 0.72, confidence: 0.8, lastConfirmedAt: NOW, now: NOW };
+
+    expect(scoreMemory({ ...oldBridge, kind: "specific" }).relevanceScore)
+      .toBeLessThan(scoreMemory({ ...freshNoise, kind: "specific" }).relevanceScore);
+    expect(scoreMemory({ ...oldBridge, kind: "multi-hop" }).relevanceScore)
+      .toBeGreaterThan(scoreMemory({ ...freshNoise, kind: "multi-hop" }).relevanceScore);
+  });
+
+  it("favours durable certainty over vague similarity on an open-ended question", () => {
+    const certainDurable = { similarity: 0.5, confidence: 0.98, lastConfirmedAt: daysAgo(10), now: NOW };
+    const similarButUnsure = { similarity: 0.72, confidence: 0.4, lastConfirmedAt: daysAgo(10), now: NOW };
+
+    expect(scoreMemory({ ...certainDurable, kind: "profile" }).relevanceScore)
+      .toBeGreaterThan(scoreMemory({ ...similarButUnsure, kind: "profile" }).relevanceScore);
   });
 });
 

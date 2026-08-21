@@ -8,19 +8,20 @@ import { loadEnv, requireEnv } from "./env";
  * so the .env file is loaded first.
  */
 async function imports() {
-  const [drizzle, dbModule, schema, engine, usage, reconcile, anthropic, dataset, judge, pricing] = await Promise.all([
+  const [drizzle, dbModule, schema, engine, usage, reconcile, consolidateMod, anthropic, dataset, judge, pricing] = await Promise.all([
     import("drizzle-orm"),
     import("@/db"),
     import("@/db/schema"),
     import("@/lib/memory-engine"),
     import("@/lib/usage-tracking"),
     import("@/lib/reconcile"),
+    import("@/lib/consolidate"),
     import("@/lib/anthropic"),
     import("./dataset"),
     import("./judge"),
     import("./pricing"),
   ]);
-  return { ...drizzle, ...dbModule, ...schema, ...engine, ...usage, ...reconcile, ...anthropic, ...dataset, ...judge, ...pricing };
+  return { ...drizzle, ...dbModule, ...schema, ...engine, ...usage, ...reconcile, ...consolidateMod, ...anthropic, ...dataset, ...judge, ...pricing };
 }
 
 type Args = {
@@ -30,6 +31,8 @@ type Args = {
   limit: number | null;
   case: string | null;
   keep: boolean;
+  /** false disables query routing, so the two can be compared on the same data. */
+  route: boolean;
 };
 
 function parseArgs(argv: string[]): Args {
@@ -43,6 +46,7 @@ function parseArgs(argv: string[]): Args {
     judgeModel: get("--judge-model") ?? "claude-opus-5",
     limit: get("--limit") ? Number(get("--limit")) : null,
     case: get("--case"),
+    route: !argv.includes("--no-route"),
     keep: argv.includes("--keep"),
   };
 }
@@ -85,7 +89,7 @@ async function main() {
   const {
     and, eq, gte,
     db, organizations, projects, environments, memories, usageEvents,
-    remember, recall, withUsageTracking, drainPendingJobs, activeModel,
+    remember, recall, withUsageTracking, drainPendingJobs, consolidate, activeModel,
     loadDataset, countQuestions,
     answerFromMemories, grade, judgeUsage,
     ANTHROPIC_RATES, costOf,
@@ -103,7 +107,8 @@ async function main() {
   console.log(`  cases      ${cases.length}/${dataset.cases.length}`);
   console.log(`  questions  ${countQuestions({ ...dataset, cases })}`);
   console.log(`  pipeline   ${pipelineModel}   (set MEMORA_MODEL to change)`);
-  console.log(`  judge      ${args.judgeModel}\n`);
+  console.log(`  judge      ${args.judgeModel}`);
+  console.log(`  routing    ${args.route ? "on" : "off (--no-route)"}\n`);
 
   // --- provision an isolated project -------------------------------------
   const [org] = await db.insert(organizations).values({ name: `eval-${startedAt.toISOString()}` }).returning();
@@ -155,6 +160,14 @@ async function main() {
       reconcileMs.push(drainMs);
       process.stdout.write("r");
 
+      // Consolidation runs in the worker in production, so the harness has to
+      // trigger it explicitly — otherwise the run measures retrieval without
+      // the profile a real caller would have.
+      const [profile] = await timed(() =>
+        withUsageTracking(usageScope, () => consolidate({ ...scope, endUserId: evalCase.userId }, true))
+      );
+      if (profile) process.stdout.write("p");
+
       const writtenRows = await db
         .select({ id: memories.id })
         .from(memories)
@@ -165,12 +178,17 @@ async function main() {
       for (const question of evalCase.questions) {
         const [retrieved, ms] = await timed(() =>
           withUsageTracking(usageScope, () =>
-            recall({ ...scope, endUserId: evalCase.userId, query: question.q, topK: 10 })
+            recall({ ...scope, endUserId: evalCase.userId, query: question.q, topK: 10, route: args.route })
           )
         );
         readMs.push(ms);
 
-        const answer = await answerFromMemories(args.judgeModel, question.q, retrieved);
+        const answer = await answerFromMemories(
+          args.judgeModel,
+          question.q,
+          retrieved,
+          profile?.content ?? null
+        );
 
         // A question that cannot be graded is recorded as ungraded and left out
         // of the accuracy figure — never counted as a failure, and never a
@@ -238,6 +256,7 @@ async function main() {
       tag: args.tag,
       pipelineModel,
       judgeModel: args.judgeModel,
+      routing: args.route,
       accuracy: results.length === 0 ? 0 : correct / results.length,
       correct,
       total: results.length,

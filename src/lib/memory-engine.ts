@@ -9,9 +9,9 @@ import {
   memoryTypeEnum,
   memoryStatusEnum,
 } from "@/db/schema";
-import { extractMemories, verifyMemory } from "@/lib/anthropic";
+import { extractMemories, routeQuery, verifyMemory } from "@/lib/anthropic";
 import { embedDocument, embedDocuments, embedQuery } from "@/lib/voyage";
-import { collapseDuplicates, matchKind, scoreMemory } from "@/lib/scoring";
+import { collapseDuplicates, matchKind, scoreMemory, type QueryKind } from "@/lib/scoring";
 import type { MemoryMetadata } from "@/lib/memory-types";
 import { extractionExamples, recordRecallHits, renderExamples } from "@/lib/feedback";
 import { getProfile } from "@/lib/consolidate";
@@ -191,6 +191,16 @@ export type RecallResult = {
   reason: string;
 };
 
+export type RecallOptions = {
+  /**
+   * How to search. Omit to route automatically with one cheap model call; pass
+   * a kind to skip it, or `"specific"` to get the old uniform behaviour.
+   */
+  kind?: QueryKind;
+  /** Set false to skip routing entirely — the eval harness uses this for A/B. */
+  route?: boolean;
+};
+
 export type RecallFilters = {
   types?: (typeof memoryTypeEnum.enumValues)[number][];
   minConfidence?: number;
@@ -216,12 +226,22 @@ export type RecallResponse = {
  * profile lookup.
  */
 export async function recall(
-  scope: Scope & { query: string; topK?: number } & RecallFilters
+  scope: Scope & { query: string; topK?: number } & RecallFilters & RecallOptions
 ): Promise<RecallResult[]> {
   const {
     projectId, environmentId, endUserId, query, topK = 10,
     types, minConfidence, since, until, agentId, sessionId,
   } = scope;
+
+  // Route first: a question about *when* something happened wants different
+  // weighting than a lookup of a literal string. One Haiku call, and a failure
+  // falls back to the uniform weighting rather than failing the read.
+  let kind: QueryKind = scope.kind ?? "specific";
+  if (!scope.kind && scope.route !== false) {
+    kind = await routeQuery(query)
+      .then((plan) => plan.kind)
+      .catch(() => "specific" as QueryKind);
+  }
 
   const conditions = [
     eq(memories.projectId, projectId),
@@ -294,6 +314,7 @@ export async function recall(
       lastConfirmedAt: row.lastConfirmedAt,
       now,
       ranks,
+      kind,
     });
 
     return {
@@ -346,7 +367,7 @@ export async function recall(
  * The two queries are independent, so they run together.
  */
 export async function recallWithProfile(
-  scope: Scope & { query: string; topK?: number } & RecallFilters
+  scope: Scope & { query: string; topK?: number } & RecallFilters & RecallOptions
 ): Promise<RecallResponse> {
   const [results, profile] = await Promise.all([recall(scope), getProfile(scope)]);
   return {

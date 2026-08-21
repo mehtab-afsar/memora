@@ -16,9 +16,9 @@ export function activeModel(): string {
   return MODEL;
 }
 
-async function callTool<T>(system: string, userMessage: string, tool: Tool): Promise<T> {
+async function callTool<T>(system: string, userMessage: string, tool: Tool, model = MODEL): Promise<T> {
   const response = await anthropic.messages.create({
-    model: MODEL,
+    model,
     // Current models think by default and thinking draws on this budget, so a
     // tight ceiling truncates the tool call and loses the whole decision.
     max_tokens: 8192,
@@ -210,6 +210,53 @@ export async function decideMemoryAction(
   const userMessage = `Candidate memory:\n${JSON.stringify(candidate, null, 2)}\n\nNearest existing memories for this user (most similar first):\n${JSON.stringify(nearestExisting, null, 2)}`;
 
   return callTool<MemoryDecision>(DECIDE_SYSTEM_PROMPT, userMessage, decideMemoryActionTool);
+}
+
+// ---------------------------------------------------------------------------
+// Query routing — decide how a question should be answered before answering it
+// ---------------------------------------------------------------------------
+
+export const QUERY_KINDS = ["temporal", "identifier", "profile", "multi-hop", "specific"] as const;
+export type QueryKind = (typeof QUERY_KINDS)[number];
+
+export type QueryPlan = {
+  kind: QueryKind;
+  /** Names, places, ids worth matching literally. Empty when the query has none. */
+  entities: string[];
+};
+
+const routeQueryTool: Tool = {
+  name: "route_query",
+  description: "Classify how a question about a person should be searched for.",
+  input_schema: {
+    type: "object",
+    properties: {
+      kind: { type: "string", enum: [...QUERY_KINDS] },
+      entities: { type: "array", items: { type: "string" } },
+    },
+    required: ["kind", "entities"],
+    additionalProperties: false,
+  },
+  strict: true,
+};
+
+const ROUTE_SYSTEM_PROMPT = `You decide how a question about a person should be searched for in their stored memories. Choose exactly one kind:
+
+- temporal: asks when something happened, or about ordering in time ("when did she move?", "what did he do before that job?").
+- identifier: asks for a specific literal string — a name, a code, a handle, a number ("what is the staging cluster called?").
+- profile: open-ended, about the person as a whole ("tell me about them", "what should I know before meeting her?").
+- multi-hop: needs two facts joined to answer, where the second depends on the first ("where does his sister live?" needs who the sister is, then where she lives).
+- specific: a single, direct question that none of the above describes. This is the common case — prefer it unless another kind clearly fits.
+
+entities: any proper nouns, identifiers or quoted strings in the question that are worth matching literally. Empty list if there are none. Do not invent entities that are not in the question.`;
+
+/**
+ * One cheap call, on the read path. Worth it because the strategies it selects
+ * differ enough that using the wrong one is what our benchmark misses look like
+ * — temporal questions scored 50% while identifier lookups scored 100%.
+ */
+export async function routeQuery(query: string, model = "claude-haiku-4-5"): Promise<QueryPlan> {
+  return callTool<QueryPlan>(ROUTE_SYSTEM_PROMPT, query, routeQueryTool, model);
 }
 
 // ---------------------------------------------------------------------------
