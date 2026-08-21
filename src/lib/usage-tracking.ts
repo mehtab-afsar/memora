@@ -15,6 +15,15 @@ export type UsageEvent = {
   inputTokens?: number;
   outputTokens?: number;
   totalTokens?: number;
+  /**
+   * Prompt-cache accounting. `inputTokens` is the uncached remainder only, so
+   * the full prompt is inputTokens + cacheReadTokens + cacheWriteTokens — and
+   * they are priced differently (a read is 0.1x, a write 1.25x). Keeping them
+   * apart is what makes it possible to say whether caching is actually paying
+   * for itself rather than assuming it.
+   */
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
 };
 
 type Store = { scope: UsageScope; events: UsageEvent[] };
@@ -54,9 +63,24 @@ export async function withUsageTracking<T>(scope: UsageScope, fn: () => Promise<
         inputTokens: event.inputTokens,
         outputTokens: event.outputTokens,
         totalTokens: event.totalTokens,
+        cacheReadTokens: event.cacheReadTokens,
+        cacheWriteTokens: event.cacheWriteTokens,
       }))
     );
   }
 
   return result;
+}
+
+/**
+ * Runs `fn` in a tracking scope that accumulates into `sink` instead of the
+ * database. For scripts and evals that want to see what a call cost without
+ * inventing a project to bill it to — see scripts/cache-probe.ts.
+ */
+export async function collectUsage<T>(sink: UsageEvent[], fn: () => Promise<T>): Promise<T> {
+  const store: Store = {
+    scope: { projectId: "", environmentId: "", source: "dashboard" },
+    events: sink,
+  };
+  return storage.run(store, fn);
 }

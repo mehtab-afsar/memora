@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { Tool } from "@anthropic-ai/sdk/resources/messages";
+import type { TextBlockParam, Tool } from "@anthropic-ai/sdk/resources/messages";
 import { MEMORY_TYPES, type MemoryType } from "@/lib/memory-types";
 import { recordUsage } from "@/lib/usage-tracking";
 
@@ -36,12 +36,52 @@ export function activeModel(): string {
  */
 const MALFORMED_RESPONSE_ATTEMPTS = 3;
 
-async function callTool<T>(system: string, userMessage: string, tool: Tool, model = MODEL): Promise<T> {
+/**
+ * Turns a system prompt into cacheable blocks.
+ *
+ * Every call here has the same shape: a large fixed instruction, one fixed tool
+ * schema, and one short piece of per-request text. Anthropic renders a request
+ * as tools -> system -> messages, so a breakpoint on the last system block
+ * caches the tool definition and the instructions together, and the only thing
+ * paid for at full price is the input itself.
+ *
+ * `dynamic` gets its own breakpoint rather than being concatenated onto the
+ * base. Extraction appends examples learned from a project's own history
+ * (src/lib/feedback.ts), and those change as the project accumulates history —
+ * concatenated, every change would invalidate the shared instructions too, and
+ * no two projects would ever share a cache entry. Split, the base is one entry
+ * for the whole system and the examples are one entry per project.
+ *
+ * Whether this is cheaper depends on traffic. A cache write costs 1.25x and a
+ * read 0.1x, so two calls within the five-minute window break even and anything
+ * busier is a large saving; a project writing one memory an hour pays about 20%
+ * more. That trade is worth taking because cost is volume-weighted — the
+ * projects responsible for nearly all of the bill are exactly the ones calling
+ * often enough to hit the cache.
+ */
+function cacheableSystem(base: string, dynamic: string): TextBlockParam[] {
+  const blocks: TextBlockParam[] = [
+    { type: "text", text: base, cache_control: { type: "ephemeral" } },
+  ];
+  if (dynamic) {
+    blocks.push({ type: "text", text: dynamic, cache_control: { type: "ephemeral" } });
+  }
+  return blocks;
+}
+
+async function callTool<T>(
+  system: string,
+  userMessage: string,
+  tool: Tool,
+  model = MODEL,
+  dynamicSystem = ""
+): Promise<T> {
   let lastError: Error | null = null;
+  const blocks = cacheableSystem(system, dynamicSystem);
 
   for (let attempt = 0; attempt < MALFORMED_RESPONSE_ATTEMPTS; attempt++) {
     try {
-      return await callToolOnce<T>(system, userMessage, tool, model);
+      return await callToolOnce<T>(blocks, userMessage, tool, model);
     } catch (error) {
       // Only a malformed response is worth asking again for. Anything else —
       // a bad key, an invalid request, a spent quota — will fail identically
@@ -56,7 +96,12 @@ async function callTool<T>(system: string, userMessage: string, tool: Tool, mode
 
 class MalformedToolResponse extends Error {}
 
-async function callToolOnce<T>(system: string, userMessage: string, tool: Tool, model: string): Promise<T> {
+async function callToolOnce<T>(
+  system: TextBlockParam[],
+  userMessage: string,
+  tool: Tool,
+  model: string
+): Promise<T> {
   const response = await anthropic.messages.create({
     model,
     // Current models think by default and thinking draws on this budget, so a
@@ -71,8 +116,13 @@ async function callToolOnce<T>(system: string, userMessage: string, tool: Tool, 
   recordUsage({
     provider: "anthropic",
     operation: tool.name,
+    // input_tokens is the uncached remainder only — the cached prefix is
+    // reported separately, so a bill reconstructed from input_tokens alone
+    // would silently under-count once caching is on.
     inputTokens: response.usage.input_tokens,
     outputTokens: response.usage.output_tokens,
+    cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
+    cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
   });
 
   const toolUse = response.content.find((block) => block.type === "tool_use");
@@ -159,9 +209,11 @@ const extractMemoriesTool: Tool = {
  */
 export async function extractMemories(text: string, learnedExamples = ""): Promise<MemoryCandidate[]> {
   const result = await callTool<{ candidates: MemoryCandidate[] }>(
-    EXTRACT_SYSTEM_PROMPT + learnedExamples,
+    EXTRACT_SYSTEM_PROMPT,
     text,
-    extractMemoriesTool
+    extractMemoriesTool,
+    MODEL,
+    learnedExamples
   );
   return result.candidates;
 }

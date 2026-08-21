@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Activity, Coins, Sparkles, Search } from "lucide-react";
+import { Activity, Coins, Sparkles, Search, Zap } from "lucide-react";
 import { getProjectInOrg, resolveCurrentEnvironment } from "@/lib/org";
 import { getUsageSummary } from "@/lib/usage";
 import { StatTile } from "@/components/charts/stat-tile";
@@ -56,6 +56,35 @@ export default async function UsagePage({
         <StatTile label="Claude calls" value={anthropicCalls.toLocaleString()} icon={Sparkles} />
         <StatTile label="Voyage calls" value={voyageCalls.toLocaleString()} icon={Search} />
       </div>
+
+      {summary.cache.readTokens + summary.cache.writeTokens > 0 && (
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <Zap className="size-3.5 text-muted-foreground" />
+              Prompt cache
+            </h2>
+            <span className="font-mono text-xs tabular-nums text-muted-foreground">
+              {summary.cache.readTokens.toLocaleString()} of{" "}
+              {(
+                summary.cache.readTokens + summary.cache.writeTokens
+              ).toLocaleString()}{" "}
+              prefix tokens read from cache
+            </span>
+          </div>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary"
+              style={{ width: `${Math.round(summary.cache.hitRate * 100)}%` }}
+            />
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {Math.round(summary.cache.hitRate * 100)}% of prompt tokens were served from cache at a
+            tenth of the usual price. The instructions and tool schema behind every call are
+            identical each time, so only your own text is charged in full.
+          </p>
+        </div>
+      )}
 
       <div className="rounded-lg border border-border bg-card p-4">
         <div className="mb-3 flex items-baseline justify-between">

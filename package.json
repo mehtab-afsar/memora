@@ -19,7 +19,8 @@
     "eval:convert-locomo": "tsx evals/convert-locomo.ts",
     "reconcile": "tsx scripts/reconcile-worker.ts",
     "smoke": "tsx scripts/smoke-api.ts",
-    "smoke:erasure": "tsx scripts/smoke-erasure.ts"
+    "smoke:erasure": "tsx scripts/smoke-erasure.ts",
+    "cache:probe": "tsx scripts/cache-probe.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",

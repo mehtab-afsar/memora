@@ -391,6 +391,11 @@ export const usageEvents = pgTable("usage_events", {
   inputTokens: integer("input_tokens"),
   outputTokens: integer("output_tokens"),
   totalTokens: integer("total_tokens"),
+  // Prompt-cache accounting. input_tokens counts only what was processed at
+  // full price, so these are not a subset of it — the whole prompt is the sum
+  // of all three, and each is billed at a different rate.
+  cacheReadTokens: integer("cache_read_tokens"),
+  cacheWriteTokens: integer("cache_write_tokens"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index("usage_events_project_created_idx").on(table.projectId, table.createdAt),

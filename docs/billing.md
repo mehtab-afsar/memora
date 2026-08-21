@@ -39,9 +39,13 @@ numbers must match `src/lib/plans.ts`, which is where the enforced limits live.
 | Memora Starter | to be decided | monthly |
 | Memora Pro | to be decided | monthly |
 
-Pricing is not set yet. The one hard number we have: the pipeline costs about
-**$9.87 in model spend per 1,000 memories**, so whatever a plan charges has to
-sit above its write quota multiplied by that, with room.
+Pricing is not set yet, and the cost floor moved: prompt caching cut the two
+Claude stages of a write by 44%, to **$7.55 per 1,000 writes** measured with
+`pnpm cache:probe` (see [prompt-caching.md](prompt-caching.md)). The older
+**$9.87 per 1,000 memories** figure predates caching and also counted embeddings,
+so treat it as an upper bound until a full eval run re-derives it end to end.
+Either way, whatever a plan charges has to sit above its write quota multiplied
+by the real number, with room.
 
 Copy each **price** id — `price_...`, not the product id.
 
