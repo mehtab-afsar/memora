@@ -156,6 +156,37 @@ export function matchKind({ vectorRank, keywordRank }: RankedLists): "both" | "m
 }
 
 // ---------------------------------------------------------------------------
+// Concurrency
+// ---------------------------------------------------------------------------
+
+/**
+ * Runs `fn` over `items` with at most `limit` in flight, preserving input
+ * order in the result. Lives here rather than in reconcile.ts so the pooling
+ * logic can be tested without a database or a model call.
+ */
+export async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  if (items.length === 0) return [];
+  const size = Math.max(1, Math.min(limit, items.length));
+  const results = new Array<R>(items.length);
+  let next = 0;
+
+  const worker = async () => {
+    for (;;) {
+      const index = next++;
+      if (index >= items.length) return;
+      results[index] = await fn(items[index], index);
+    }
+  };
+
+  await Promise.all(Array.from({ length: size }, worker));
+  return results;
+}
+
+// ---------------------------------------------------------------------------
 // Query-aware weighting
 // ---------------------------------------------------------------------------
 

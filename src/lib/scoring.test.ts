@@ -5,6 +5,7 @@ import {
   decay,
   EXPERIENCE_RECALL_WEIGHTS,
   fuseRanks,
+  mapWithConcurrency,
   matchKind,
   halfLifeDays,
   MEMORY_FRESHNESS_DECAY_DAYS,
@@ -177,6 +178,44 @@ describe("scoreMemory with rank fusion", () => {
     const without = scoreMemory({ similarity: 0.5, confidence: 0, lastConfirmedAt: NOW, now: NOW });
     expect(withRanks.relevanceScore).not.toBeCloseTo(without.relevanceScore, 4);
     expect(without.relevanceScore).toBeCloseTo(0.6 * 0.5 + 0.15, 10);
+  });
+});
+
+describe("mapWithConcurrency", () => {
+  it("preserves input order regardless of completion order", async () => {
+    const result = await mapWithConcurrency([30, 10, 20], 3, async (ms) => {
+      await new Promise((r) => setTimeout(r, ms));
+      return ms;
+    });
+    expect(result).toEqual([30, 10, 20]);
+  });
+
+  it("never exceeds the limit", async () => {
+    let inFlight = 0;
+    let peak = 0;
+    await mapWithConcurrency(Array.from({ length: 20 }, (_, i) => i), 4, async () => {
+      inFlight += 1;
+      peak = Math.max(peak, inFlight);
+      await new Promise((r) => setTimeout(r, 5));
+      inFlight -= 1;
+    });
+    expect(peak).toBe(4);
+  });
+
+  it("actually runs things in parallel", async () => {
+    const started = Date.now();
+    await mapWithConcurrency([20, 20, 20, 20], 4, (ms) => new Promise((r) => setTimeout(r, ms)));
+    // Sequentially this would be ~80ms.
+    expect(Date.now() - started).toBeLessThan(70);
+  });
+
+  it("handles an empty list and a limit larger than the work", async () => {
+    expect(await mapWithConcurrency([], 5, async () => 1)).toEqual([]);
+    expect(await mapWithConcurrency([1, 2], 99, async (n) => n * 2)).toEqual([2, 4]);
+  });
+
+  it("treats a nonsense limit as one rather than stalling", async () => {
+    expect(await mapWithConcurrency([1, 2], 0, async (n) => n)).toEqual([1, 2]);
   });
 });
 

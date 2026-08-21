@@ -94,6 +94,13 @@ not a backup.
 - **Reconciliation drains after each response** via `after()`, and the worker
   covers retries and backlog. Run exactly one worker to start; it claims jobs
   with `FOR UPDATE SKIP LOCKED`, so more than one is safe when you need it.
+- **Reconciliation runs several end users at once** (`RECONCILE_CONCURRENCY`,
+  default 5) and stays sequential within one user, because a memory is only ever
+  compared against others belonging to the same user. Raising it raises model
+  spend per minute and database connections in equal measure.
+- **The connection pool is bounded** by `DATABASE_POOL_MAX` (default 10) per
+  process. Every app instance and every worker opens its own, so the ceiling to
+  watch is instances x pool size against what your database allows.
 - **The worker also sweeps** the rate-limit and idempotency tables every ten
   minutes. Without it they grow forever.
 

@@ -5,6 +5,7 @@ import { contradictions, memories, memoryEvidence, reconciliationJobs } from "@/
 import { decideMemoryAction, type ExistingMemoryForDecision } from "@/lib/anthropic";
 import type { MemoryMetadata } from "@/lib/memory-types";
 import { embedDocument } from "@/lib/voyage";
+import { mapWithConcurrency } from "@/lib/scoring";
 
 /**
  * Reconciliation — the judgement half of remember().
@@ -279,7 +280,14 @@ async function supersede(params: {
 
 export type JobScope = { projectId: string; environmentId: string; endUserId?: string };
 
-type ClaimedJob = { id: string; memory_id: string; attempts: number };
+type ClaimedJob = { id: string; memory_id: string; attempts: number; end_user_id: string };
+
+/**
+ * How many end users are reconciled at once. Each in-flight job holds a model
+ * call and a database connection, so this is bounded by the smaller of the two
+ * — the default pg pool is 10.
+ */
+const USER_CONCURRENCY = Number(process.env.RECONCILE_CONCURRENCY ?? 5);
 
 /**
  * Claims up to `limit` pending jobs and runs them. `FOR UPDATE SKIP LOCKED`
@@ -305,19 +313,33 @@ export async function drainPendingJobs(scope: JobScope | null, limit = 25): Prom
         LIMIT ${limit}
         FOR UPDATE SKIP LOCKED
      )
-    RETURNING id, memory_id, attempts
+    RETURNING id, memory_id, attempts, end_user_id
   `);
 
-  let completed = 0;
-
+  // Jobs are grouped by end user and the groups run in parallel, because a
+  // memory is only ever compared against others belonging to the same end user
+  // — the neighbour query filters on it. Two users can never influence each
+  // other's verdicts, so there is nothing to serialise between them.
+  //
+  // Within a user, order still matters and the group stays sequential: sibling
+  // candidates from one write see each other only once the earlier one has been
+  // reconciled. Judging them concurrently would make each blind to the other
+  // and let a duplicate through that should have been merged.
+  const byUser = new Map<string, ClaimedJob[]>();
   for (const job of claimed.rows) {
+    const group = byUser.get(job.end_user_id) ?? [];
+    group.push(job);
+    byUser.set(job.end_user_id, group);
+  }
+
+  const runOne = async (job: ClaimedJob): Promise<boolean> => {
     try {
       await reconcileMemory(job.memory_id);
       await db
         .update(reconciliationJobs)
         .set({ status: "done", finishedAt: new Date(), lastError: null })
         .where(eq(reconciliationJobs.id, job.id));
-      completed += 1;
+      return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const exhausted = job.attempts >= MAX_ATTEMPTS;
@@ -331,10 +353,17 @@ export async function drainPendingJobs(scope: JobScope | null, limit = 25): Prom
           finishedAt: exhausted ? new Date() : null,
         })
         .where(eq(reconciliationJobs.id, job.id));
+      return false;
     }
-  }
+  };
 
-  return completed;
+  const perUser = await mapWithConcurrency([...byUser.values()], USER_CONCURRENCY, async (group) => {
+    let done = 0;
+    for (const job of group) if (await runOne(job)) done += 1;
+    return done;
+  });
+
+  return perUser.reduce((sum, n) => sum + n, 0);
 }
 
 export async function pendingJobCount(scope: JobScope | null = null): Promise<number> {
