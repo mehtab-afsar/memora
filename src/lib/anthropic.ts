@@ -213,6 +213,49 @@ export async function decideMemoryAction(
 }
 
 // ---------------------------------------------------------------------------
+// Consolidation — synthesize many memories into one understanding of a person
+// ---------------------------------------------------------------------------
+
+const consolidateTool: Tool = {
+  name: "consolidate_profile",
+  description: "Synthesize a set of memories about one person into a short, factual profile.",
+  input_schema: {
+    type: "object",
+    properties: {
+      profile: { type: "string" },
+      used_memory_ids: { type: "array", items: { type: "string" } },
+    },
+    required: ["profile", "used_memory_ids"],
+    additionalProperties: false,
+  },
+  strict: true,
+};
+
+const CONSOLIDATE_SYSTEM_PROMPT = `You are given everything a system currently knows about one person, as a list of separate memories. Write a short profile that captures who they are, so that someone reading it once understands the person without reading all the memories.
+
+Rules:
+- Ground every clause in the memories given. Add nothing. If you find yourself inferring, stop.
+- Group related facts into single natural statements rather than listing them. "Vegan, and severely allergic to peanuts" beats two sentences.
+- Prefer what is durable and consequential — constraints, preferences, relationships, current situation. Skip one-off events unless they explain something durable.
+- Where memories carry dates, keep them. Where a memory is marked as flagged or contradictory, say so plainly ("has said both X and Y") rather than choosing a side.
+- Be compact. Aim for under 120 words. A profile nobody reads is worthless.
+- Write in the third person, plainly, with no preamble and no headings.
+
+used_memory_ids must list the ids of the memories you actually drew on — not all of them. This is what makes the profile auditable.`;
+
+export type ConsolidatedProfile = { profile: string; used_memory_ids: string[] };
+
+export async function consolidateProfile(
+  memoriesForProfile: { id: string; content: string; type: string; status: string; confidence: number }[]
+): Promise<ConsolidatedProfile> {
+  return callTool<ConsolidatedProfile>(
+    CONSOLIDATE_SYSTEM_PROMPT,
+    JSON.stringify(memoriesForProfile, null, 2),
+    consolidateTool
+  );
+}
+
+// ---------------------------------------------------------------------------
 // verify() — re-run confidence assessment for an existing memory
 // ---------------------------------------------------------------------------
 

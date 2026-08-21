@@ -56,6 +56,15 @@ export type RecalledMemory = {
   reason: string;
 };
 
+/** A synthesis of everything known about one user. Null until enough is known. */
+export type UserProfile = {
+  content: string;
+  /** ISO timestamp of when it was last rebuilt. */
+  generatedAt: string;
+  /** How many memories it was built from. */
+  memoryCount: number;
+};
+
 export type Memory = {
   id: string;
   endUserId: string;
@@ -195,8 +204,13 @@ export class Memora {
     );
   }
 
-  /** Retrieve the memories relevant to a query, ranked and explained. */
-  async recall(params: RecallParams): Promise<{ results: RecalledMemory[] }> {
+  /**
+   * Retrieve the memories relevant to a query, ranked and explained — plus a
+   * short profile of the user, once enough is known to be worth summarising.
+   * Put the profile in your system prompt for the shape of the person, and the
+   * ranked memories for the specifics.
+   */
+  async recall(params: RecallParams): Promise<{ results: RecalledMemory[]; profile: UserProfile | null }> {
     return this.#request("POST", "/api/v1/memories/recall", {
       user_id: params.userId,
       query: params.query,

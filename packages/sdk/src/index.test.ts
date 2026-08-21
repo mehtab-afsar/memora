@@ -113,6 +113,23 @@ describe("errors", () => {
   });
 });
 
+describe("profile", () => {
+  it("passes the profile through when one exists", async () => {
+    const { fetch } = stubFetch([
+      { status: 200, body: { results: [], profile: { content: "Vegan, allergic to peanuts.", generatedAt: "2026-08-21T00:00:00Z", memoryCount: 42 } } },
+    ]);
+    const { profile } = await client(fetch).recall({ userId: "u", query: "q" });
+    expect(profile?.content).toBe("Vegan, allergic to peanuts.");
+    expect(profile?.memoryCount).toBe(42);
+  });
+
+  it("is null for a user nothing has been consolidated for yet", async () => {
+    const { fetch } = stubFetch([{ status: 200, body: { results: [], profile: null } }]);
+    const { profile } = await client(fetch).recall({ userId: "u", query: "q" });
+    expect(profile).toBeNull();
+  });
+});
+
 describe("guards", () => {
   it("sends an idempotency key when one is given", async () => {
     const { fetch, calls } = stubFetch([{ status: 200, body: { outcomes: [] } }]);

@@ -1,5 +1,5 @@
 import { withApiKey } from "@/lib/with-api-key";
-import { recall } from "@/lib/memory-engine";
+import { recallWithProfile } from "@/lib/memory-engine";
 import { badRequest, recallBodySchema } from "@/lib/api-schemas";
 
 export async function POST(request: Request) {
@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     }
     const { user_id, query, top_k, type, min_confidence, since, until, agent_id, session_id } = parsed.data;
 
-    const results = await recall({
+    const { results, profile } = await recallWithProfile({
       projectId: ctx.projectId,
       environmentId: ctx.environmentId,
       endUserId: user_id,
@@ -24,6 +24,6 @@ export async function POST(request: Request) {
       sessionId: session_id,
     });
 
-    return Response.json({ results });
+    return Response.json({ results, profile });
   });
 }

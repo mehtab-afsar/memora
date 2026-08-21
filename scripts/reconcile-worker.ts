@@ -15,6 +15,10 @@ async function main() {
 
   const { drainPendingJobs, pendingJobCount } = await import("@/lib/reconcile");
   const { pruneIdempotencyKeys, pruneRateLimitWindows } = await import("@/lib/guards");
+  const { consolidateStale } = await import("@/lib/consolidate");
+  const { db } = await import("@/db");
+  const { environments, projects } = await import("@/db/schema");
+  const { eq } = await import("drizzle-orm");
 
   const argv = process.argv.slice(2);
   const watch = argv.includes("--watch");
@@ -29,6 +33,19 @@ async function main() {
       return completed;
     }
     return 0;
+  };
+
+  // Profiles are rebuilt here rather than on the write path: consolidation
+  // costs a model call over a large prompt, and no caller should wait for it.
+  const rebuildProfiles = async () => {
+    const scopes = await db
+      .select({ projectId: projects.id, environmentId: environments.id })
+      .from(environments)
+      .innerJoin(projects, eq(environments.projectId, projects.id));
+
+    let rebuilt = 0;
+    for (const scope of scopes) rebuilt += await consolidateStale(scope);
+    if (rebuilt > 0) console.log(`[consolidate] rebuilt ${rebuilt} profile(s)`);
   };
 
   // Rate-limit counters and idempotency records are write-heavy and short
@@ -47,6 +64,7 @@ async function main() {
 
   if (!watch) {
     await runOnce();
+    await rebuildProfiles();
     await sweep();
     return;
   }
@@ -55,6 +73,7 @@ async function main() {
   for (;;) {
     try {
       await runOnce();
+      await rebuildProfiles();
       await sweep();
     } catch (error) {
       console.error("[reconcile] pass failed", error);

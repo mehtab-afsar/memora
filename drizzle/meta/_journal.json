@@ -71,6 +71,13 @@
       "when": 1787323786249,
       "tag": "0009_narrow_goliath",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787325062495,
+      "tag": "0010_loud_imperial_guard",
+      "breakpoints": true
     }
   ]
 }

@@ -199,6 +199,38 @@ export const memoryEvidence = pgTable("memory_evidence", {
 ]);
 
 // ---------------------------------------------------------------------------
+// Consolidated profiles.
+//
+// Deliberately NOT a row in `memories`. A profile is derived rather than
+// extracted, so it has no source excerpt; it supersedes nothing, so it has no
+// version chain; it is regenerated wholesale rather than versioned; and if it
+// lived in `memories` it would be judged by reconciliation and would compete in
+// the ranking against the very memories it summarises.
+//
+// It exists because recall is search, and search over two hundred
+// near-equally-scored facts about one person answers "what do you know about
+// them?" badly. A person is not a list of facts.
+// ---------------------------------------------------------------------------
+
+export const userProfiles = pgTable("user_profiles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  environmentId: uuid("environment_id").notNull().references(() => environments.id, { onDelete: "cascade" }),
+  endUserId: text("end_user_id").notNull(),
+  content: text("content").notNull(),
+  // Which memories this was built from, so a profile is as auditable as
+  // everything else here — a claim in it can always be traced to its sources.
+  sourceMemoryIds: jsonb("source_memory_ids").notNull(),
+  // How many active memories existed when this was generated. Drift from the
+  // current count is what decides staleness, without needing a dirty flag that
+  // every write has to remember to set.
+  memoryCount: integer("memory_count").notNull(),
+  generatedAt: timestamp("generated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("user_profiles_scope_idx").on(table.projectId, table.environmentId, table.endUserId),
+]);
+
+// ---------------------------------------------------------------------------
 // Reconciliation queue — one job per appended memory. A durable table rather
 // than an in-process queue: the version chain, the evidence and the
 // contradiction flags are the product, so a dropped job is a missing

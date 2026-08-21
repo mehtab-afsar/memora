@@ -14,6 +14,7 @@ import { embedDocument, embedDocuments, embedQuery } from "@/lib/voyage";
 import { collapseDuplicates, matchKind, scoreMemory } from "@/lib/scoring";
 import type { MemoryMetadata } from "@/lib/memory-types";
 import { extractionExamples, recordRecallHits, renderExamples } from "@/lib/feedback";
+import { getProfile } from "@/lib/consolidate";
 
 type Scope = { projectId: string; environmentId: string; endUserId: string };
 type WriteScope = Scope & { agentId?: string; sessionId?: string };
@@ -199,6 +200,21 @@ export type RecallFilters = {
   sessionId?: string;
 };
 
+export type RecallResponse = {
+  results: RecallResult[];
+  /**
+   * A short synthesis of everything known about this user, or null before one
+   * has been built. Present because "what do you know about them?" is answered
+   * badly by ten ranked strings — see src/lib/consolidate.ts.
+   */
+  profile: { content: string; generatedAt: Date; memoryCount: number } | null;
+};
+
+/**
+ * Ranked memories only. Kept as the primitive because the dashboard, the eval
+ * harness and recallWithProfile() all want the ranking without paying for a
+ * profile lookup.
+ */
 export async function recall(
   scope: Scope & { query: string; topK?: number } & RecallFilters
 ): Promise<RecallResult[]> {
@@ -323,6 +339,22 @@ export async function recall(
       history: history.get(row.memoryId) ?? [],
       reason: row.reason,
     }));
+}
+
+/**
+ * What the API returns: the ranked memories, plus the shape of the person.
+ * The two queries are independent, so they run together.
+ */
+export async function recallWithProfile(
+  scope: Scope & { query: string; topK?: number } & RecallFilters
+): Promise<RecallResponse> {
+  const [results, profile] = await Promise.all([recall(scope), getProfile(scope)]);
+  return {
+    results,
+    profile: profile
+      ? { content: profile.content, generatedAt: profile.generatedAt, memoryCount: profile.memoryCount }
+      : null,
+  };
 }
 
 /** How far back a result reports its own history. Chains are short in practice. */

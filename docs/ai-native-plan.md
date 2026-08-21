@@ -91,7 +91,34 @@ runs, and it is a moat that a competitor cannot copy by reading our docs.
 
 ---
 
-## 2. Consolidation — reason over the corpus, not the row
+## 2. Consolidation — reason over the corpus, not the row  — **built, 21 Aug 2026**
+
+Shipped as `src/lib/consolidate.ts`, stored in its own `user_profiles` table —
+deliberately not as a row in `memories`, since a profile is derived rather than
+extracted, supersedes nothing, is regenerated wholesale rather than versioned,
+and if it lived there it would be judged by reconciliation and would compete in
+the ranking against the very memories it summarises.
+
+The demonstration, on five real messages about one person. Asked the open-ended
+question "tell me about this user", ranking returned:
+
+    0.70  The user's name is Priya.
+    0.68  Works on the platform team at Cobalt Labs
+    0.68  Is training for a half marathon in October.
+    0.67  Only takes meetings before noon
+
+Four facts within 0.03 of each other — and the severe peanut allergy did not
+make the top four. Neither did vegan, nor the move to Lisbon. The profile built
+from the same memories:
+
+> Priya lives in Lisbon, having moved there from Berlin in July 2026. She works
+> on the platform team at Cobalt Labs, only takes meetings before noon and
+> reserves afternoons for deep work. She is vegan and severely allergic to
+> peanuts, carrying an EpiPen as a precaution. She runs before breakfast and is
+> training for a half marathon in October. Her sister Ana lives in Porto, and
+> Priya visits her most months.
+
+That is the argument for a different representation rather than better weights.
 
 *This is how humans actually remember. We do not recall 210 facts about someone;
 we hold a model of them and retrieve specifics on demand.*

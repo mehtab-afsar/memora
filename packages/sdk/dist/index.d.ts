@@ -46,6 +46,14 @@ export type RecalledMemory = {
     /** Plain-English account of why this was returned. */
     reason: string;
 };
+/** A synthesis of everything known about one user. Null until enough is known. */
+export type UserProfile = {
+    content: string;
+    /** ISO timestamp of when it was last rebuilt. */
+    generatedAt: string;
+    /** How many memories it was built from. */
+    memoryCount: number;
+};
 export type Memory = {
     id: string;
     endUserId: string;
@@ -136,9 +144,15 @@ export declare class Memora {
     remember(params: RememberParams): Promise<{
         outcomes: RememberOutcome[];
     }>;
-    /** Retrieve the memories relevant to a query, ranked and explained. */
+    /**
+     * Retrieve the memories relevant to a query, ranked and explained — plus a
+     * short profile of the user, once enough is known to be worth summarising.
+     * Put the profile in your system prompt for the shape of the person, and the
+     * ranked memories for the specifics.
+     */
     recall(params: RecallParams): Promise<{
         results: RecalledMemory[];
+        profile: UserProfile | null;
     }>;
     list(params?: {
         userId?: string;

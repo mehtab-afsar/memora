@@ -66,7 +66,12 @@ export class Memora {
             source: params.source,
         }, params.idempotencyKey);
     }
-    /** Retrieve the memories relevant to a query, ranked and explained. */
+    /**
+     * Retrieve the memories relevant to a query, ranked and explained — plus a
+     * short profile of the user, once enough is known to be worth summarising.
+     * Put the profile in your system prompt for the shape of the person, and the
+     * ranked memories for the specifics.
+     */
     async recall(params) {
         return this.#request("POST", "/api/v1/memories/recall", {
             user_id: params.userId,
