@@ -112,9 +112,14 @@ const extractMemoriesTool: Tool = {
   strict: true,
 };
 
-export async function extractMemories(text: string): Promise<MemoryCandidate[]> {
+/**
+ * `learnedExamples` is rendered from this project's own history — what it has
+ * kept and what it has discarded (src/lib/feedback.ts). Empty for a new
+ * project, in which case the prompt is byte-identical to the unlearned one.
+ */
+export async function extractMemories(text: string, learnedExamples = ""): Promise<MemoryCandidate[]> {
   const result = await callTool<{ candidates: MemoryCandidate[] }>(
-    EXTRACT_SYSTEM_PROMPT,
+    EXTRACT_SYSTEM_PROMPT + learnedExamples,
     text,
     extractMemoriesTool
   );

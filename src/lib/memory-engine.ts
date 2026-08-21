@@ -12,6 +12,8 @@ import {
 import { extractMemories, verifyMemory } from "@/lib/anthropic";
 import { embedDocument, embedDocuments, embedQuery } from "@/lib/voyage";
 import { collapseDuplicates, matchKind, scoreMemory } from "@/lib/scoring";
+import type { MemoryMetadata } from "@/lib/memory-types";
+import { extractionExamples, recordRecallHits, renderExamples } from "@/lib/feedback";
 
 type Scope = { projectId: string; environmentId: string; endUserId: string };
 type WriteScope = Scope & { agentId?: string; sessionId?: string };
@@ -44,7 +46,11 @@ export async function remember(
   // a new fact, a new version of an old one, a restatement or a contradiction
   // is decided afterwards by src/lib/reconcile.ts — see PLAN.md phase 1 for why
   // that judgement no longer sits between the caller and their response.
-  const candidates = await extractMemories(content);
+  // What this project has learned about its own users is part of how it reads
+  // the next message. One indexed query, alongside a model call that costs
+  // three orders of magnitude more.
+  const learned = renderExamples(await extractionExamples(projectId));
+  const candidates = await extractMemories(content, learned);
   if (candidates.length === 0) return { outcomes: [] };
 
   const embeddings = await embedDocuments(candidates.map((candidate) => candidate.content));
@@ -297,6 +303,11 @@ export async function recall(
   // reworded twin can both be active, so results are collapsed before slicing.
   const top = collapseDuplicates(scored).slice(0, topK);
   const history = await priorVersions(top.filter((row) => row.chainRootId !== row.memoryId).map((row) => row.memoryId));
+
+  // Which memories actually got used is the usefulness signal the feedback loop
+  // reads back (src/lib/feedback.ts). Fire-and-forget: a read must never fail
+  // because a counter did.
+  void recordRecallHits(top.map((row) => row.memoryId)).catch(() => undefined);
 
   return top
     .map((row) => ({
@@ -593,9 +604,18 @@ export async function updateMemory(
 
 /** Soft-delete: archives rather than hard-deletes, preserving the evidence trail. */
 export async function forgetMemory(memoryId: string, projectScope: { projectId: string; environmentId: string }) {
+  const [existing] = await db.select({ metadata: memories.metadata }).from(memories).where(eq(memories.id, memoryId)).limit(1);
+
   const [updated] = await db
     .update(memories)
-    .set({ status: "archived", updatedAt: new Date() })
+    // Recorded as a human decision rather than a bare archive: someone looking
+    // at this memory decided it should not have been kept, which is the
+    // strongest negative example extraction ever receives.
+    .set({
+      status: "archived",
+      metadata: { ...((existing?.metadata ?? {}) as MemoryMetadata), discarded: "human" },
+      updatedAt: new Date(),
+    })
     .where(
       and(
         eq(memories.id, memoryId),

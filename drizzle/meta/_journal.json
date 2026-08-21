@@ -64,6 +64,13 @@
       "when": 1787230256895,
       "tag": "0008_fantastic_diamondback",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787323786249,
+      "tag": "0009_narrow_goliath",
+      "breakpoints": true
     }
   ]
 }

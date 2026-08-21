@@ -43,3 +43,24 @@ export const MEMORY_STATUS_LABELS: Record<MemoryStatus, string> = {
   archived: "Archived",
   flagged: "Flagged",
 };
+
+/**
+ * Everything we keep in `memories.metadata`.
+ *
+ * `discarded` is the important one: it records *why* a memory stopped being
+ * active, which is what turns reconciliation's verdicts into training signal
+ * for extraction. See src/lib/feedback.ts.
+ */
+export type MemoryMetadata = {
+  /** Claude's stated reason for extracting this, carried from write to reconcile. */
+  extractionRationale?: string;
+  /** Set when this row was retired as a restatement of another memory. */
+  restatesMemoryId?: string;
+  /**
+   * Why this memory was archived:
+   * - `trivial` — reconciliation judged it not worth persisting at all
+   * - `restatement` — it repeated something already known
+   * - `human` — someone archived it from the dashboard or the API
+   */
+  discarded?: "trivial" | "restatement" | "human";
+};

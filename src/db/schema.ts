@@ -169,6 +169,12 @@ export const memories = pgTable("memories", {
   // neighbours. Writes are append-only, so a memory is readable before it has
   // been judged — see src/lib/reconcile.ts.
   reconciledAt: timestamp("reconciled_at", { withTimezone: true }),
+  // How often this memory has actually been returned by recall, and when last.
+  // A memory nobody ever retrieves is one extraction should probably not have
+  // kept — this is the closest thing to a usefulness signal we can measure
+  // without asking anyone. See src/lib/feedback.ts.
+  recallCount: integer("recall_count").notNull().default(0),
+  lastRecalledAt: timestamp("last_recalled_at", { withTimezone: true }),
   contentTsv: tsvector("content_tsv").generatedAlwaysAs(sql`to_tsvector('english', content)`),
 }, (table) => [
   index("memories_scope_idx").on(table.projectId, table.environmentId, table.endUserId, table.status),

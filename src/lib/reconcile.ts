@@ -3,6 +3,7 @@ import { cosineDistance } from "drizzle-orm/sql";
 import { db } from "@/db";
 import { contradictions, memories, memoryEvidence, reconciliationJobs } from "@/db/schema";
 import { decideMemoryAction, type ExistingMemoryForDecision } from "@/lib/anthropic";
+import type { MemoryMetadata } from "@/lib/memory-types";
 import { embedDocument } from "@/lib/voyage";
 
 /**
@@ -82,7 +83,7 @@ export async function reconcileMemory(memoryId: string): Promise<ReconcileResult
 
   // The extraction rationale is persisted in metadata at write time precisely
   // so the decision below sees the same candidate the old inline path did.
-  const metadata = (memory.metadata ?? {}) as { extractionRationale?: string };
+  const metadata = (memory.metadata ?? {}) as MemoryMetadata;
 
   const decision = await decideMemoryAction(
     {
@@ -162,19 +163,45 @@ export async function reconcileMemory(memoryId: string): Promise<ReconcileResult
     }
 
     case "IGNORE": {
-      // A restatement of something already known. The appended row is retired
-      // rather than deleted, so the id the caller received stays resolvable,
-      // and the memory it restates is refreshed and gains the evidence.
+      // Two different cases share this verdict, and they mean opposite things.
       //
-      // Deliberately NOT linked with supersedesId: that column means "this
-      // version replaced that one" and drives the version chain, and a
+      // With a target: a restatement of something already known. The appended
+      // row is retired rather than deleted, so the id the caller received stays
+      // resolvable, and the memory it restates is refreshed and gains the
+      // evidence. Deliberately NOT linked with supersedesId — that column means
+      // "this version replaced that one" and drives the version chain, and a
       // restatement is not a new version. The link lives in metadata instead.
-      if (decision.target_memory_id) {
+      //
+      // Without a target: the decider judged the candidate too trivial to keep
+      // at all. Leaving it active would mean persisting something the system
+      // just declared not worth persisting — and would throw away the cleanest
+      // negative example extraction ever gets. See src/lib/feedback.ts.
+      if (!decision.target_memory_id) {
         await db
           .update(memories)
           .set({
             status: "archived",
-            metadata: { ...(memory.metadata as Record<string, unknown> | null), restatesMemoryId: decision.target_memory_id },
+            metadata: { ...metadata, discarded: "trivial" },
+            updatedAt: now,
+          })
+          .where(eq(memories.id, memory.id));
+        await db.insert(memoryEvidence).values({
+          memoryId: memory.id,
+          sourceType: memory.sourceType,
+          sourceId: memory.sourceId,
+          excerpt: memory.content,
+          eventType: "updated",
+          reasoning: `Discarded as too trivial to persist. ${decision.reasoning}`,
+        });
+        break;
+      }
+
+      {
+        await db
+          .update(memories)
+          .set({
+            status: "archived",
+            metadata: { ...metadata, discarded: "restatement", restatesMemoryId: decision.target_memory_id },
             updatedAt: now,
           })
           .where(eq(memories.id, memory.id));
