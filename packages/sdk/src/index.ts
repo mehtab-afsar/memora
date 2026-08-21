@@ -93,6 +93,36 @@ export type Experience = {
   createdAt: string;
 };
 
+/** What {@link Memora.exportUser} returns: everything held about one end user. */
+export type UserExport = {
+  userId: string;
+  exportedAt: string;
+  profile: { content: string; generatedAt: string; memoryCount: number } | null;
+  memories: {
+    id: string;
+    content: string;
+    type: MemoryType;
+    status: MemoryStatus;
+    confidence: number;
+    importance: number;
+    agentId: string | null;
+    sessionId: string | null;
+    source: { type: string; id: string | null };
+    metadata: Record<string, unknown> | null;
+    createdAt: string;
+    updatedAt: string;
+    lastConfirmedAt: string;
+    supersedesId: string | null;
+    evidence: {
+      excerpt: string;
+      eventType: string;
+      reasoning: string | null;
+      source: { type: string; id: string | null };
+      createdAt: string;
+    }[];
+  }[];
+};
+
 export type RememberParams = {
   userId: string;
   content: string;
@@ -262,9 +292,39 @@ export class Memora {
     return this.#request("DELETE", `/api/v1/memories/${encodeURIComponent(memoryId)}`);
   }
 
-  /** Archive everything held for one end user. */
+  /** Archive everything held for one end user. Reversible; nothing is destroyed. */
   async forgetUser(userId: string): Promise<{ archived: number }> {
     return this.#request("DELETE", `/api/v1/memories${query({ user_id: userId })}`);
+  }
+
+  /**
+   * Everything held about one end user, including archived and superseded
+   * memories and the excerpts they were learned from. What you send someone
+   * who asks what you have on them.
+   */
+  async exportUser(userId: string): Promise<UserExport> {
+    return this.#request("GET", `/api/v1/users/${encodeURIComponent(userId)}`);
+  }
+
+  /**
+   * Permanently destroys everything held about one end user. Unlike
+   * {@link forgetUser}, this cannot be undone — it is the erasure operation, for
+   * answering a right-to-be-forgotten request rather than tidying up.
+   *
+   * Returns a `subjectHash` you can keep as proof the request was actioned.
+   */
+  async eraseUser(userId: string): Promise<{
+    erased: true;
+    memoriesErased: number;
+    profilesErased: number;
+    subjectHash: string;
+  }> {
+    return this.#request("DELETE", `/api/v1/users/${encodeURIComponent(userId)}?confirm=erase`);
+  }
+
+  /** Permanently destroys one memory, rather than archiving it. */
+  async eraseMemory(memoryId: string): Promise<{ erased: true; id: string }> {
+    return this.#request("DELETE", `/api/v1/memories/${encodeURIComponent(memoryId)}?confirm=erase`);
   }
 
   // -- experiences ---------------------------------------------------------

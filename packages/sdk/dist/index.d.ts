@@ -80,6 +80,45 @@ export type Experience = {
     lesson: string;
     createdAt: string;
 };
+/** What {@link Memora.exportUser} returns: everything held about one end user. */
+export type UserExport = {
+    userId: string;
+    exportedAt: string;
+    profile: {
+        content: string;
+        generatedAt: string;
+        memoryCount: number;
+    } | null;
+    memories: {
+        id: string;
+        content: string;
+        type: MemoryType;
+        status: MemoryStatus;
+        confidence: number;
+        importance: number;
+        agentId: string | null;
+        sessionId: string | null;
+        source: {
+            type: string;
+            id: string | null;
+        };
+        metadata: Record<string, unknown> | null;
+        createdAt: string;
+        updatedAt: string;
+        lastConfirmedAt: string;
+        supersedesId: string | null;
+        evidence: {
+            excerpt: string;
+            eventType: string;
+            reasoning: string | null;
+            source: {
+                type: string;
+                id: string | null;
+            };
+            createdAt: string;
+        }[];
+    }[];
+};
 export type RememberParams = {
     userId: string;
     content: string;
@@ -181,9 +220,33 @@ export declare class Memora {
     forget(memoryId: string): Promise<{
         memory: Memory;
     }>;
-    /** Archive everything held for one end user. */
+    /** Archive everything held for one end user. Reversible; nothing is destroyed. */
     forgetUser(userId: string): Promise<{
         archived: number;
+    }>;
+    /**
+     * Everything held about one end user, including archived and superseded
+     * memories and the excerpts they were learned from. What you send someone
+     * who asks what you have on them.
+     */
+    exportUser(userId: string): Promise<UserExport>;
+    /**
+     * Permanently destroys everything held about one end user. Unlike
+     * {@link forgetUser}, this cannot be undone — it is the erasure operation, for
+     * answering a right-to-be-forgotten request rather than tidying up.
+     *
+     * Returns a `subjectHash` you can keep as proof the request was actioned.
+     */
+    eraseUser(userId: string): Promise<{
+        erased: true;
+        memoriesErased: number;
+        profilesErased: number;
+        subjectHash: string;
+    }>;
+    /** Permanently destroys one memory, rather than archiving it. */
+    eraseMemory(memoryId: string): Promise<{
+        erased: true;
+        id: string;
     }>;
     readonly experiences: {
         record: (params: {

@@ -43,19 +43,37 @@ export default function PrivacyPage() {
         the <Link href="/legal/sub-processors">sub-processors</Link> page.
       </p>
 
-      <h2>Retention, and an honest limitation</h2>
+      <h2>Retention, deletion and erasure</h2>
       <p>
         Memory data is kept until the customer removes it or closes their account. Deleting a memory
-        through the API or the dashboard currently <strong>archives</strong> it: it stops being
+        through the API or the dashboard <strong>archives</strong> it by default: it stops being
         returned by recall, but the row and its evidence remain in the database. That is deliberate —
         the product&apos;s purpose is an audit trail, and the trail has to survive a deletion to be
         worth anything.
       </p>
       <p>
-        <strong>It is also not erasure.</strong> A customer responding to a GDPR Article 17 request
-        from one of their end users needs the data actually gone, and archiving does not achieve
-        that. A hard-delete path is required before we can honestly offer that guarantee. [This gap
-        must be closed before onboarding any customer subject to GDPR.]
+        Archiving is not erasure, so <strong>erasure is a separate operation</strong>.{" "}
+        <code>DELETE /api/v1/users/:id?confirm=erase</code> permanently destroys everything held
+        about one end user: the memories, the source excerpts they were extracted from, the
+        embeddings derived from them, any pending processing and the generated profile. It cannot be
+        undone. A single memory can be erased the same way with{" "}
+        <code>DELETE /api/v1/memories/:id?confirm=erase</code>.
+      </p>
+      <p>
+        We keep a record that an erasure happened — when, in which project, and how much was
+        destroyed — because a customer answering a regulator has to be able to show the request was
+        actioned. That record identifies the subject only by a salted hash of their identifier, so it
+        proves the erasure without retaining the identifier we were asked to forget.
+      </p>
+      <p>
+        <code>GET /api/v1/users/:id</code> returns everything held about one end user, including
+        archived memories and the excerpts behind each one, for answering an access or portability
+        request.
+      </p>
+      <p>
+        Request logs and usage records are excluded from erasure. They record an organization, a
+        project, an API key and a count — no end-user identifier and no submitted content — and they
+        are what an operator needs to answer a disputed invoice or investigate abuse.
       </p>
 
       <h2>Security</h2>

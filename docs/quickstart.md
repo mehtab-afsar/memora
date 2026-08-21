@@ -100,6 +100,8 @@ That is the whole loop: recall before you answer, remember after.
 | Only preferences, only recent, only one agent | `type`, `since`, `agent_id` on recall |
 | An agent that learns from its own attempts | `POST /api/v1/experiences/record`, then `/recommend` |
 | Memory inside Claude Code or Cursor | [`@memora/mcp`](../packages/mcp/README.md) |
+| To answer "what do you have on me?" | `GET /api/v1/users/:id` — see [data rights](data-rights.md) |
+| To actually delete someone's data | `DELETE /api/v1/users/:id?confirm=erase` |
 
 ## Things worth knowing
 
@@ -109,3 +111,6 @@ That is the whole loop: recall before you answer, remember after.
   both come back marked `flagged`. Ask the user; don't let the system guess.
 - **Restatements are confirmations.** Saying the same thing again raises a memory's
   freshness rather than duplicating it.
+- **Deleting archives; erasing destroys.** `DELETE` stops a memory being recalled but
+  keeps the trail. Add `?confirm=erase` when the obligation is that the data stops
+  existing — see [data rights](data-rights.md).

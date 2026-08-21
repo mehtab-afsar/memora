@@ -109,9 +109,31 @@ export class Memora {
     async forget(memoryId) {
         return this.#request("DELETE", `/api/v1/memories/${encodeURIComponent(memoryId)}`);
     }
-    /** Archive everything held for one end user. */
+    /** Archive everything held for one end user. Reversible; nothing is destroyed. */
     async forgetUser(userId) {
         return this.#request("DELETE", `/api/v1/memories${query({ user_id: userId })}`);
+    }
+    /**
+     * Everything held about one end user, including archived and superseded
+     * memories and the excerpts they were learned from. What you send someone
+     * who asks what you have on them.
+     */
+    async exportUser(userId) {
+        return this.#request("GET", `/api/v1/users/${encodeURIComponent(userId)}`);
+    }
+    /**
+     * Permanently destroys everything held about one end user. Unlike
+     * {@link forgetUser}, this cannot be undone — it is the erasure operation, for
+     * answering a right-to-be-forgotten request rather than tidying up.
+     *
+     * Returns a `subjectHash` you can keep as proof the request was actioned.
+     */
+    async eraseUser(userId) {
+        return this.#request("DELETE", `/api/v1/users/${encodeURIComponent(userId)}?confirm=erase`);
+    }
+    /** Permanently destroys one memory, rather than archiving it. */
+    async eraseMemory(memoryId) {
+        return this.#request("DELETE", `/api/v1/memories/${encodeURIComponent(memoryId)}?confirm=erase`);
     }
     // -- experiences ---------------------------------------------------------
     experiences = {

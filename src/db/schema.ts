@@ -398,6 +398,32 @@ export const usageEvents = pgTable("usage_events", {
 ]);
 
 // ---------------------------------------------------------------------------
+// Erasure log.
+//
+// Proof that a data-subject erasure request was actioned, without keeping the
+// identifier it was about. The subject is stored as a SHA-256 of
+// project:environment:end_user_id, so an operator holding the id can recompute
+// the hash and show the erasure happened, while the log on its own names
+// nobody. See src/lib/erasure.ts.
+// ---------------------------------------------------------------------------
+
+export const erasureViaEnum = pgEnum("erasure_via", ["api", "dashboard"]);
+
+export const erasureRecords = pgTable("erasure_records", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  environmentId: uuid("environment_id").notNull().references(() => environments.id, { onDelete: "cascade" }),
+  subjectHash: text("subject_hash").notNull(),
+  memoriesErased: integer("memories_erased").notNull(),
+  profilesErased: integer("profiles_erased").notNull(),
+  requestedVia: erasureViaEnum("requested_via").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("erasure_records_scope_idx").on(table.projectId, table.environmentId, table.createdAt),
+  index("erasure_records_subject_idx").on(table.subjectHash),
+]);
+
+// ---------------------------------------------------------------------------
 // Relations (for query ergonomics)
 // ---------------------------------------------------------------------------
 
