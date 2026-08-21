@@ -20,6 +20,7 @@
     "reconcile": "tsx scripts/reconcile-worker.ts",
     "smoke": "tsx scripts/smoke-api.ts",
     "smoke:erasure": "tsx scripts/smoke-erasure.ts",
+    "smoke:team": "tsx scripts/smoke-team.ts",
     "cache:probe": "tsx scripts/cache-probe.ts"
   },
   "dependencies": {

@@ -51,7 +51,20 @@ export const users = pgTable("users", {
   uniqueIndex("users_email_idx").on(table.email),
 ]);
 
-export const membershipRoleEnum = pgEnum("membership_role", ["owner"]);
+/**
+ * Three roles, deliberately not more.
+ *
+ * `owner` runs the organization — billing, deleting it, and the only role that
+ * can promote another owner. `admin` runs the team and the projects but cannot
+ * touch billing or destroy the org. `member` uses the product.
+ *
+ * The reference implementation this borrows from (aibra.ai) has per-company
+ * user-defined roles with scoped permissions, hierarchical org units and user
+ * groups. That is the right shape for an enterprise org chart and the wrong one
+ * for a developer API: the whole question here is "can this person invite people
+ * and can they spend money", which three fixed roles answer.
+ */
+export const membershipRoleEnum = pgEnum("membership_role", ["owner", "admin", "member"]);
 
 export const memberships = pgTable("memberships", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -102,6 +115,51 @@ export const apiKeys = pgTable("api_keys", {
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
 }, (table) => [
   uniqueIndex("api_keys_key_hash_idx").on(table.keyHash),
+]);
+
+// ---------------------------------------------------------------------------
+// Invitations.
+//
+// A separate table rather than a pending row in `memberships`, because a
+// membership needs a `user_id` and the person being invited usually has no
+// account yet — there is nothing to hang a pending state on. The invitation is
+// therefore keyed by email, and only becomes a membership when someone signs in
+// and proves they hold that address.
+//
+// The token is stored hashed, exactly like an API key: the raw value exists in
+// the emailed link and nowhere else, so a leaked database dump does not hand
+// over a working invitation to every organization.
+// ---------------------------------------------------------------------------
+
+export const invitationStatusEnum = pgEnum("invitation_status", [
+  "pending",
+  "accepted",
+  "revoked",
+]);
+
+export const invitations = pgTable("invitations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  role: membershipRoleEnum("role").notNull().default("member"),
+  tokenHash: text("token_hash").notNull(),
+  // Kept as `set null` rather than cascade: an invitation is a record of
+  // something that happened, and it should survive the inviter leaving.
+  invitedByUserId: uuid("invited_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  status: invitationStatusEnum("status").notNull().default("pending"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  // How many times the link has been sent, so a resend is visible rather than
+  // silently indistinguishable from the original.
+  sentCount: integer("sent_count").notNull().default(1),
+}, (table) => [
+  uniqueIndex("invitations_token_hash_idx").on(table.tokenHash),
+  index("invitations_org_status_idx").on(table.orgId, table.status),
+  // One live invitation per email per org. Enforced in code rather than as a
+  // partial unique index so that re-inviting someone whose invitation was
+  // revoked or expired is an ordinary, allowed thing.
+  index("invitations_org_email_idx").on(table.orgId, table.email),
 ]);
 
 // ---------------------------------------------------------------------------
