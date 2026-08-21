@@ -79,6 +79,10 @@ async function main() {
   };
   const tag = get("--tag") ?? "run";
   const only = get("--case");
+  // Model output varies run to run, so a quality bug that appears sometimes
+  // needs a rate rather than an anecdote. --repeat runs every case N times and
+  // reports how often each one holds.
+  const repeat = Math.max(1, Number(get("--repeat") ?? 1));
 
   const { extractMemories, activeModel } = await import("@/lib/anthropic");
 
@@ -93,8 +97,12 @@ async function main() {
 
   // Extraction is one Anthropic call per case with no embeddings involved, so
   // these run concurrently — unlike the full eval, nothing here is rate limited.
-  const results = await Promise.all(
-    cases.map(async (evalCase) => {
+  const attempts = cases.flatMap((evalCase) =>
+    Array.from({ length: repeat }, (_, run) => ({ evalCase, run }))
+  );
+
+  const runs = await Promise.all(
+    attempts.map(async ({ evalCase, run }) => {
       const started = performance.now();
       let candidates: Candidate[] = [];
       let error: string | null = null;
@@ -105,13 +113,28 @@ async function main() {
       }
       const ms = performance.now() - started;
       const failures = error ? [error] : evaluate(candidates, evalCase.expect);
-      return { ...evalCase, candidates, failures, ms };
+      return { ...evalCase, run, candidates, failures, ms };
     })
   );
 
+  // Collapse repeats back to one row per case, keeping a failing run as the
+  // example — a case that passes four times and fails once is a failing case.
+  const results = cases.map((evalCase) => {
+    const mine = runs.filter((r) => r.id === evalCase.id);
+    const failed = mine.filter((r) => r.failures.length > 0);
+    const example = failed[0] ?? mine[0];
+    return {
+      ...example,
+      passRate: (mine.length - failed.length) / mine.length,
+      runs: mine.length,
+      ms: mine.reduce((sum, r) => sum + r.ms, 0) / mine.length,
+    };
+  });
+
   for (const result of results) {
     const ok = result.failures.length === 0;
-    console.log(`  ${ok ? "PASS" : "FAIL"}  ${result.id.padEnd(24)} ${result.ms.toFixed(0)}ms`);
+    const rate = result.runs > 1 ? `  ${(result.passRate * 100).toFixed(0)}% of ${result.runs}` : "";
+    console.log(`  ${ok ? "PASS" : "FAIL"}  ${result.id.padEnd(24)} ${result.ms.toFixed(0)}ms${rate}`);
     if (!ok) {
       for (const failure of result.failures) console.log(`          ${failure}`);
       console.log(`          why it matters: ${result.why}`);

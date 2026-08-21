@@ -1,0 +1,609 @@
+<title>Memora User Manual</title>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&display=swap">
+<style>
+  :root {
+    --paper: #ffffff; --tint: #f7f7f5; --ink: #0b0b0b; --muted: #4d4c49; --faint: #8a8a85;
+    --rule: rgba(11,11,11,0.16); --hair: rgba(11,11,11,0.08);
+    --signal: #2a78d6; --signal-soft: rgba(42,120,214,0.07);
+    --good: #199e70; --good-soft: rgba(25,158,112,0.09);
+    --warn: #c98500; --warn-soft: rgba(201,133,0,0.10);
+    --risk: #cf4a3f; --risk-soft: rgba(207,74,63,0.09);
+    --brand-accent: var(--signal);
+  }
+  @page { size: 8.27in 11.69in; margin: 0.72in 0.8in 0.62in; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background: var(--paper); }
+  body {
+    color: var(--ink); font-family: "Archivo","Helvetica Neue",Arial,sans-serif;
+    font-size: 10.5pt; line-height: 1.5;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  h1 { font-size: 30pt; line-height:1.04; letter-spacing:-0.03em; font-weight:600; margin:0; }
+  h2 {
+    font-size: 16pt; letter-spacing:-0.022em; font-weight:600; margin:0 0 0.10in;
+    padding-top: 0.06in;
+  }
+  h3 { font-size: 11.5pt; font-weight:600; letter-spacing:-0.01em; margin:0 0 0.05in; }
+  p { margin: 0 0 0.13in; }
+  .prose { font-family:"Newsreader",Georgia,serif; font-weight:300; font-size:11.5pt; line-height:1.55; color:var(--muted); }
+  .prose em { font-style:normal; color:var(--ink); font-weight:400; }
+  .eyebrow {
+    font-family:"JetBrains Mono",monospace; font-size:8pt; letter-spacing:0.16em;
+    text-transform:uppercase; color:var(--faint); margin-bottom:0.06in;
+  }
+  code { font-family:"JetBrains Mono",monospace; font-size:0.87em; background:var(--tint); padding:0.01in 0.04in; }
+  pre {
+    font-family:"JetBrains Mono",monospace; font-size:8.5pt; line-height:1.5;
+    background:var(--ink); color:#f2f2ef; padding:0.16in 0.2in; margin:0 0 0.14in;
+    white-space:pre-wrap; word-break:break-word;
+  }
+  pre code { background:none; padding:0; font-size:1em; }
+  pre .c { color:#8b8b85; } pre .k { color:#7fb2f0; } pre .s { color:#9fd8a8; } pre .o { color:#e0a35e; }
+  section { break-inside: auto; }
+  .page-break { break-before: page; }
+  .rule { height:1px; background:var(--rule); margin:0 0 0.14in; }
+  table { width:100%; border-collapse:collapse; font-size:9pt; margin:0 0 0.14in; }
+  th,td { text-align:left; padding:0.06in 0.09in; vertical-align:top; border-bottom:1px solid var(--hair); }
+  thead th {
+    font-family:"JetBrains Mono",monospace; font-size:7.5pt; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--faint); font-weight:500; border-bottom:1px solid var(--rule);
+  }
+  tbody tr:last-child td { border-bottom:none; }
+  td.dim { color:var(--muted); }
+  .mono, td.mono { font-family:"JetBrains Mono",monospace; font-size:8.5pt; }
+  .box { border:1px solid var(--rule); background:var(--tint); padding:0.16in 0.18in; margin:0 0 0.14in; }
+  .box.note { border-left:3px solid var(--signal); background:var(--signal-soft); }
+  .box.warn { border-left:3px solid var(--warn); background:var(--warn-soft); }
+  .box.risk { border-left:3px solid var(--risk); background:var(--risk-soft); }
+  .box p:last-child { margin-bottom:0; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:0.2in; }
+  .step { display:grid; grid-template-columns:0.3in 1fr; gap:0.12in; margin-bottom:0.15in; }
+  .step .n { font-family:"JetBrains Mono",monospace; font-size:9pt; color:var(--signal); padding-top:0.02in; }
+  .step p { margin-bottom:0.06in; }
+  .tag {
+    display:inline-block; font-family:"JetBrains Mono",monospace; font-size:7pt;
+    letter-spacing:0.09em; text-transform:uppercase; padding:0.015in 0.07in; border:1px solid currentColor;
+  }
+  .tag.good { color:var(--good); background:var(--good-soft); }
+  .tag.warn { color:var(--warn); background:var(--warn-soft); }
+  .tag.risk { color:var(--risk); background:var(--risk-soft); }
+  .tag.blue { color:var(--signal); background:var(--signal-soft); }
+  .cover { height:9.6in; display:flex; flex-direction:column; justify-content:center; }
+  .brandline { display:flex; align-items:center; gap:0.12in; margin-bottom:0.28in; }
+  .brandline .name { font-size:14pt; font-weight:600; letter-spacing:-0.04em; }
+  .toc { font-size:10pt; }
+  .toc li { margin-bottom:0.05in; color:var(--muted); }
+  .toc b { color:var(--ink); font-weight:600; }
+</style>
+
+<!-- ============================ COVER ============================ -->
+<section class="cover">
+  <div class="brandline"><svg viewBox="0 0 64 64" width="30" height="30" fill="none" style="color:var(--ink)"><circle cx="32.0" cy="10.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="51.05" cy="21.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="54.0" cy="32.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="51.05" cy="43.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="43.0" cy="51.05" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="32.0" cy="54.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="21.0" cy="51.05" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="12.95" cy="43.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="10.0" cy="32.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="12.95" cy="21.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="21.0" cy="12.95" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="32.0" cy="32.0" r="3.4" fill="currentColor"/><path d="M35.7 25.59 L39.7 18.66" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" fill="none"/><circle cx="43.0" cy="12.95" r="4.6" fill="var(--brand-accent, #2A78D6)"/></svg><span class="name">Memora</span></div>
+  <h1>User manual</h1>
+  <p class="prose" style="font-size:14pt; max-width:26em; margin-top:0.16in">
+    How to use Memora, what happens to a memory once you send it, exactly what is
+    stored — and an honest list of what has not been built yet.
+  </p>
+  <div class="rule" style="margin-top:0.3in"></div>
+  <div class="eyebrow">Version 0.1 · 21 August 2026 · every example below is real output from a running instance</div>
+
+  <div style="margin-top:0.5in">
+    <div class="eyebrow">Contents</div>
+    <ol class="toc">
+      <li><b>The idea in one page</b> — what Memora replaces</li>
+      <li><b>Getting set up</b> — keys, environments, install</li>
+      <li><b>The two calls</b> — remember and recall</li>
+      <li><b>What happens when you store a memory</b> — the four stages, timed</li>
+      <li><b>What is actually stored</b> — every table, with real rows</li>
+      <li><b>What happens when you ask for a memory</b> — retrieval and ranking</li>
+      <li><b>Reading a result</b> — what each field means and when to trust it</li>
+      <li><b>The dashboard</b></li>
+      <li><b>Using it from an agent</b> — MCP</li>
+      <li><b>Recipes</b> — the patterns worth copying</li>
+      <li><b>Limits, errors and what to do about them</b></li>
+      <li><b>What we have not built yet</b> — the missing links</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============================ 1 ============================ -->
+<section class="page-break">
+  <div class="eyebrow">Section 1</div>
+  <h2>The idea in one page</h2>
+  <div class="rule"></div>
+
+  <p class="prose">An AI application has no memory between sessions. The usual workarounds are to resend
+  the whole conversation every time, or to embed the transcript into a vector store and hope similarity
+  finds the right bit later. Both store <em>text</em>. Neither can tell you what is currently true about a
+  person.</p>
+
+  <p class="prose">Memora stores <em>knowledge</em> instead. You send it what someone said; it works out which
+  parts are durable, keeps those, and throws away the rest. When something changes, it links the new version
+  to the old one and records why. When two things cannot both be true, it says so instead of picking a side.
+  Later, you ask a question and get back the handful of facts that bear on it — each one carrying its own
+  explanation of why it was returned.</p>
+
+  <div class="box note">
+    <p><b>The mental model:</b> Memora is not a database you write rows to. It is closer to an assistant who
+    listens to your conversations, keeps notes on what matters, notices when a note goes out of date, and hands
+    you the relevant page when you need it. You do not tell it what to remember. You tell it what happened.</p>
+  </div>
+
+  <h3>What it is good at</h3>
+  <table>
+    <tbody>
+      <tr><td style="width:36%"><b>Facts that persist</b></td><td class="dim">Preferences, constraints, goals, decisions, relationships — the things a person would be annoyed to repeat.</td></tr>
+      <tr><td><b>Facts that change</b></td><td class="dim">A job, a city, a preference that reversed. The old value stays readable; the new one supersedes it with a reason.</td></tr>
+      <tr><td><b>Facts that conflict</b></td><td class="dim">A stated allergy and a later contradicting statement. Both are flagged rather than one silently winning.</td></tr>
+      <tr><td><b>Knowing why</b></td><td class="dim">Every memory keeps the exact text it came from, and every change keeps the reasoning behind it.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>What it is not</h3>
+  <table>
+    <tbody>
+      <tr><td style="width:36%"><b>Not a transcript store</b></td><td class="dim">It deliberately discards most of what you send. If you need the raw conversation, keep your own copy — Memora keeps a short source excerpt for audit, not the full history.</td></tr>
+      <tr><td><b>Not a general vector database</b></td><td class="dim">You cannot store arbitrary documents in it. It stores statements about people.</td></tr>
+      <tr><td><b>Not a cache</b></td><td class="dim">Writes cost a model call. Do not call <code>remember</code> on every keystroke — call it on a completed turn.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================ 2 ============================ -->
+<section class="page-break">
+  <div class="eyebrow">Section 2</div>
+  <h2>Getting set up</h2>
+  <div class="rule"></div>
+
+  <div class="step"><span class="n">01</span><div>
+    <h3>Create an organisation, a project and an environment</h3>
+    <p class="prose">Sign up in the dashboard. An <b>organisation</b> is your company. A <b>project</b> is usually
+    one application. An <b>environment</b> is <code>development</code> or <code>production</code> within that project —
+    and this is the important one, because memories in different environments never mix.</p>
+  </div></div>
+
+  <div class="step"><span class="n">02</span><div>
+    <h3>Generate an API key</h3>
+    <p class="prose">Keys belong to one environment. A development key physically cannot read production memories —
+    it is not a filter, it is a different scope. Keys also carry scopes: <code>read</code>, <code>write</code>, or
+    both. Give your backend a read+write key and anything analytical a read-only one.</p>
+    <pre>export MEMORA_API_KEY=sk_live_...</pre>
+  </div></div>
+
+  <div class="step"><span class="n">03</span><div>
+    <h3>Install the client</h3>
+    <pre>npm install @memora/client</pre>
+    <pre><span class="k">import</span> { Memora } <span class="k">from</span> <span class="s">"@memora/client"</span>;
+
+<span class="k">const</span> memora = <span class="k">new</span> Memora({ apiKey: process.env.MEMORA_API_KEY! });</pre>
+    <p class="prose">There are no dependencies and it runs anywhere <code>fetch</code> does — Node, Bun, Deno,
+    Workers. An environment-scoped key belongs on a server; never ship one to a browser.</p>
+  </div></div>
+
+  <div class="box warn">
+    <p><b>Choosing a user id.</b> Every memory is filed under a <code>user_id</code> that you choose — your own
+    identifier for that person. It is opaque to Memora. Use a stable internal id, not an email address that might
+    change, and never a value that itself contains personal data you would not want stored.</p>
+  </div>
+</section>
+
+<!-- ============================ 3 ============================ -->
+<section class="page-break">
+  <div class="eyebrow">Section 3</div>
+  <h2>The two calls</h2>
+  <div class="rule"></div>
+
+  <p class="prose">Everything else in this manual is detail. The whole integration is two calls, in this order,
+  around whatever your application already does.</p>
+
+  <pre><span class="c">// 1. BEFORE you answer — pull what is known that bears on this message</span>
+<span class="k">const</span> { results } = <span class="k">await</span> memora.recall({
+  userId,
+  query: userMessage,
+  topK: <span class="o">5</span>,
+});
+
+<span class="k">const</span> whatWeKnow = results.map(m => <span class="s">`- ${m.content}`</span>).join(<span class="s">"\n"</span>);
+<span class="c">// ...put whatWeKnow in your system prompt, then call your model as usual</span>
+
+<span class="c">// 2. AFTER the turn — hand Memora what was said</span>
+<span class="k">await</span> memora.remember({ userId, content: userMessage });</pre>
+
+  <div class="box note">
+    <p><b>Recall before, remember after.</b> That order matters: recalling first means the current turn is answered
+    with everything known up to now, and remembering after means this turn is available for the next one. Reversing
+    them wastes a model call and changes nothing.</p>
+  </div>
+
+  <h3>What you get back from a write</h3>
+  <pre>{
+  outcomes: [
+    { candidateContent: <span class="s">"Is vegan."</span>,
+      decision: <span class="s">"ADD"</span>,
+      memoryId: <span class="s">"a3f1..."</span>,
+      reconciliation: <span class="s">"pending"</span> },
+    { candidateContent: <span class="s">"Has a serious peanut allergy."</span>,
+      decision: <span class="s">"ADD"</span>,
+      memoryId: <span class="s">"b7c2..."</span>,
+      reconciliation: <span class="s">"pending"</span> }
+  ]
+}</pre>
+  <p class="prose">One sentence became two memories, and a third of the message — the greeting — became nothing,
+  because it was not worth keeping. <code>"pending"</code> means the memories are stored and readable now, and are
+  being judged against what was already known. That judgement takes a few seconds and does not block you.</p>
+</section>
+
+<!-- ============================ 4 ============================ -->
+<section class="page-break">
+  <div class="eyebrow">Section 4</div>
+  <h2>What happens when you store a memory</h2>
+  <div class="rule"></div>
+
+  <p class="prose">Four stages. The first three happen before your call returns; the fourth happens after,
+  which is why writes are fast despite doing a lot of thinking.</p>
+
+  <div class="step"><span class="n">01</span><div>
+    <h3>Extract — one model call</h3>
+    <p class="prose">Your text goes to Claude, which pulls out durable statements about the user and discards
+    reactions, acknowledgements and small talk. Each candidate gets a type, a confidence and an importance.
+    Relative dates are resolved against any timestamp in the text, so "yesterday" becomes a real date.</p>
+    <pre><span class="c">// you sent:</span>
+<span class="s">"Hey — I'm Priya. I'm vegan, and I'm allergic to peanuts, it's serious."</span>
+
+<span class="c">// extraction produced:</span>
+[fact]       The user's name is Priya.        confidence 0.99
+[preference] Is vegan.                        confidence 0.98
+[fact]       Has a serious peanut allergy.    confidence 0.99</pre>
+  </div></div>
+
+  <div class="step"><span class="n">02</span><div>
+    <h3>Embed — one batched call</h3>
+    <p class="prose">All candidates are turned into 1024-dimension vectors in a single request, no matter how
+    many there are. This is what makes semantic search possible later.</p>
+  </div></div>
+
+  <div class="step"><span class="n">03</span><div>
+    <h3>Store and return</h3>
+    <p class="prose">Every candidate is written, each with a row recording the exact source text it came from,
+    and a job is queued to judge it. Your call returns here — measured at <b>5.5 to 8.3 seconds</b> in the
+    example run, almost all of it the extraction call.</p>
+  </div></div>
+
+  <div class="step"><span class="n">04</span><div>
+    <h3>Reconcile — after the response</h3>
+    <p class="prose">Now the interesting part. Each new memory is compared against the closest existing ones and
+    Claude decides what it actually is:</p>
+    <table>
+      <thead><tr><th>Verdict</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">ADD</td><td class="dim">Genuinely new. Nothing to repair.</td></tr>
+        <tr><td class="mono">UPDATE</td><td class="dim">A newer version of an existing fact. The new row links to the old one, the old is marked <code>superseded</code>, and the reason is recorded.</td></tr>
+        <tr><td class="mono">MERGE</td><td class="dim">Extra detail on something known. The two are combined into one fact.</td></tr>
+        <tr><td class="mono">IGNORE</td><td class="dim">A restatement. The duplicate is archived and the original's freshness is refreshed — repetition is treated as confirmation.</td></tr>
+        <tr><td class="mono">FLAG</td><td class="dim">Cannot both be true. Both memories are marked <code>flagged</code> and a contradiction record is written.</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+
+  <div class="box note">
+    <p><b>Why afterwards and not during?</b> Because judgement is the slow part, and nothing about your user's
+    experience improves by making them wait for it. The queue is a real database table, so a crash, a deploy or a
+    failed model call means the job is retried — never silently skipped.</p>
+  </div>
+</section>
+
+<!-- ============================ 5 ============================ -->
+<section class="page-break">
+  <div class="eyebrow">Section 5</div>
+  <h2>What is actually stored</h2>
+  <div class="rule"></div>
+
+  <p class="prose">Yes — the storage layer is built and running. It is PostgreSQL with the <code>pgvector</code>
+  extension, and everything lives in one database: the memories, their embeddings, the full-text index, the job
+  queue, the rate limit counters. There is no second datastore to keep in sync.</p>
+
+  <p class="prose">Here is the actual table after the three messages in Section 4, taken from a live instance:</p>
+
+  <pre style="font-size:7.6pt">content                                     | type        | status     | conf | ver | judged
+--------------------------------------------+-------------+------------+------+-----+-------
+Has a serious peanut allergy.               | fact        | active     | 0.99 |  -  |  yes
+The user's name is Priya.                   | fact        | active     | 0.99 |  -  |  yes
+Is vegan.                                   | preference  | active     | 0.98 |  -  |  yes
+Works at Cobalt Labs                        | fact        | superseded | 0.90 |  -  |  yes
+Started a new job last month                | event       | active     | 0.85 | v2  |  yes
+Moved from Berlin to Lisbon last month      | event       | active     | 0.90 |  -  |  yes
+Currently lives in Lisbon                   | fact        | active     | 0.90 |  -  |  yes
+Previously lived in Berlin                  | fact        | archived   | 0.85 |  -  |  yes
+Wants the assistant to remember their pea.. | instruction | archived   | 0.95 |  -  |  yes
+Cannot eat peanuts (peanut allergy or int.. | fact        | archived   | 0.98 |  -  |  yes</pre>
+
+  <p class="prose">Ten memories from three sentences. Note what reconciliation did without being asked: the third
+  message repeated the peanut allergy, so those two candidates were <b>archived</b> as restatements rather than
+  stored twice — and the original was refreshed instead.</p>
+
+  <h3>The tables</h3>
+  <table>
+    <thead><tr><th>Table</th><th>What it holds</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">memories</td><td class="dim">The statement itself, its type, status, confidence, importance, a 1024-dimension embedding, a full-text index, a link to the version it replaced, and the ids of the end user, agent and session it belongs to.</td></tr>
+      <tr><td class="mono">memory_evidence</td><td class="dim">Why this memory exists. One row per event, holding the source excerpt, the source type and id you passed in, and Claude's stated reasoning for any change.</td></tr>
+      <tr><td class="mono">contradictions</td><td class="dim">Pairs of memories that cannot both be true, with the explanation and a resolution once a human settles it.</td></tr>
+      <tr><td class="mono">reconciliation_jobs</td><td class="dim">The judgement queue — status, attempts, last error. This is what makes the audit trail survive a crash.</td></tr>
+      <tr><td class="mono">experiences</td><td class="dim">A separate log for what an <em>agent</em> learned attempting a task, rather than what is true about a person.</td></tr>
+      <tr><td class="mono">usage_events, api_requests</td><td class="dim">Every model call and every billable request, per project and per key.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>An evidence trail, in full</h3>
+  <p class="prose">This is every row recorded for the peanut allergy — the answer to "why does it believe this?":</p>
+  <pre style="font-size:7.6pt">event        | source     | excerpt                              | reasoning
+-------------+------------+--------------------------------------+---------------------------------
+extracted    | chat msg_1 | Has a serious peanut allergy.        | -
+reconfirmed  | chat msg_3 | Cannot eat peanuts (peanut allergy)  | The candidate restates the
+             |            |                                      | existing memory "Has a serious…"
+reconfirmed  | chat msg_3 | Wants the assistant to remember…     | This is essentially a restatement
+             |            |                                      | of the existing peanut allergy…</pre>
+  <p class="prose">The <code>source</code> column is whatever you passed as <code>source</code> on the write. Pass
+  your own message ids there and you can walk from any memory back to the exact message in your system that
+  produced it.</p>
+</section>
+
+<!-- ============================ 6 ============================ -->
+<section class="page-break">
+  <div class="eyebrow">Section 6</div>
+  <h2>What happens when you ask for a memory</h2>
+  <div class="rule"></div>
+
+  <p class="prose">Recall runs two searches and fuses them. Embeddings find what a question is <em>about</em>;
+  a full-text index finds the exact strings embeddings blur — names, ticket numbers, cluster ids. A memory found
+  by either route makes the candidate list; one found by both ranks higher.</p>
+
+  <p class="prose">The candidates are then scored on three things, not one:</p>
+  <table>
+    <thead><tr><th>Signal</th><th>Weight</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><b>Match</b></td><td class="mono">60%</td><td class="dim">How well it matches the question, semantically and by keyword.</td></tr>
+      <tr><td><b>Confidence</b></td><td class="mono">25%</td><td class="dim">How sure we are the fact is true, based on how it was stated and how often confirmed.</td></tr>
+      <tr><td><b>Freshness</b></td><td class="mono">15%</td><td class="dim">How recently it was confirmed. Decays smoothly; halves at about 62 days.</td></tr>
+    </tbody>
+  </table>
+
+  <p class="prose">Real output from the instance above — note that the food question surfaces the dietary facts
+  without either word appearing in the query:</p>
+
+  <pre style="font-size:8pt">Q: "can they eat the pad thai?"
+
+  0.69  Is vegan.                        preference · matched on meaning
+  0.69  Has a serious peanut allergy.    fact       · matched on meaning
+  0.68  The user's name is Priya.        fact       · matched on meaning
+
+Q: "where do they live?"
+
+  0.97  Currently lives in Lisbon        fact       · matched on BOTH
+  0.69  Is vegan.                        preference · matched on meaning
+  0.68  Has a serious peanut allergy.    fact       · matched on meaning</pre>
+
+  <div class="box warn">
+    <p><b>Read those numbers honestly.</b> The right answers came first both times, and the keyword hit on
+    "Lisbon" scored 0.97 — the fusion working exactly as designed. But look at the food question: the correct
+    memories scored 0.69 and an irrelevant one scored 0.68. The ranking is right, the <em>margin</em> is almost
+    nothing.</p>
+    <p>The cause is that confidence and freshness are near-identical across fresh memories, so they add a constant
+    to everything and compress the differences. It works at ten memories. At two hundred — which one dense
+    conversation produced in our benchmark — it is why the right fact sometimes does not make the top five. This
+    is the single most valuable thing to fix next, and it is a ranking problem, not an intelligence one.</p>
+  </div>
+</section>
+
+<!-- ============================ 7 ============================ -->
+<section class="page-break">
+  <div class="eyebrow">Section 7</div>
+  <h2>Reading a result</h2>
+  <div class="rule"></div>
+
+  <pre>{
+  memoryId:       <span class="s">"b7c2-…"</span>,
+  content:        <span class="s">"Has a serious peanut allergy."</span>,
+  type:           <span class="s">"fact"</span>,
+  status:         <span class="s">"active"</span>,
+  relevanceScore: <span class="o">0.69</span>,
+  similarity:     <span class="o">0.32</span>,
+  confidence:     <span class="o">0.99</span>,
+  freshness:      <span class="o">1.00</span>,
+  matchedOn:      <span class="s">"meaning"</span>,
+  reason:         <span class="s">"weak semantic match (0.32), high confidence, recently confirmed"</span>,
+  history:        []
+}</pre>
+
+  <table>
+    <thead><tr><th>Field</th><th>What to do with it</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">content</td><td class="dim">Put this in your prompt. It is written as a third-person statement so it reads correctly there.</td></tr>
+      <tr><td class="mono">status</td><td class="dim"><b>Check this.</b> <code>active</code> is a settled fact. <code>flagged</code> means it contradicts another memory and neither is settled — show both, or ask the user, but never state it as fact.</td></tr>
+      <tr><td class="mono">relevanceScore</td><td class="dim">The ranking number. Compare within one result set; do not compare across queries.</td></tr>
+      <tr><td class="mono">confidence</td><td class="dim">How much to trust the fact itself. Use <code>minConfidence</code> on the call if you only want near-certainties.</td></tr>
+      <tr><td class="mono">freshness</td><td class="dim">1.0 is confirmed just now. Below 0.3 the system is telling you this has not been mentioned in a long time.</td></tr>
+      <tr><td class="mono">matchedOn</td><td class="dim"><code>keyword</code> means an exact string matched — usually a very literal hit. <code>both</code> is the strongest signal.</td></tr>
+      <tr><td class="mono">reason</td><td class="dim">Plain English. Log it, or show it in your own admin UI when someone asks why the assistant said something.</td></tr>
+      <tr><td class="mono">history</td><td class="dim">Earlier versions of this same fact, newest first. Empty for a fact that never changed. This is what answers "where did they used to work?".</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box note">
+    <p><b>A pattern worth copying.</b> When rendering memories into a system prompt, mark the flagged ones:</p>
+    <pre style="margin-bottom:0">results.map(m => m.status === <span class="s">"flagged"</span>
+  ? <span class="s">`- ${m.content} (CONFLICTS with another memory — ask, do not assume)`</span>
+  : <span class="s">`- ${m.content}`</span>
+)</pre>
+  </div>
+
+  <h3>Asking why, in full</h3>
+  <pre><span class="k">await</span> memora.explain(memoryId);
+<span class="c">// -> the memory, every evidence row, every version with the reason it changed,
+//    any contradictions, and whether it has been reconciled yet</span></pre>
+</section>
+
+<!-- ============================ 8 & 9 ============================ -->
+<section class="page-break">
+  <div class="eyebrow">Section 8</div>
+  <h2>The dashboard</h2>
+  <div class="rule"></div>
+  <p class="prose">Everything above is visible without writing code. The dashboard lets you browse and filter
+  memories by user, type and status; open any one to see its evidence trail and version timeline; edit or archive
+  one by hand; and use a playground to try <code>remember</code> and <code>recall</code> against a real
+  environment. Memories still waiting to be judged show a "reconciling" chip, and ones whose judgement failed show
+  as "unreconciled" rather than pretending to be settled.</p>
+
+  <div class="eyebrow" style="margin-top:0.28in">Section 9</div>
+  <h2>Using it from an agent</h2>
+  <div class="rule"></div>
+  <p class="prose">An MCP server ships alongside the API, so Claude Code, Cursor or any MCP client can use Memora
+  directly with no integration code:</p>
+  <pre>claude mcp add memora --env MEMORA_API_KEY=sk_live_... -- npx -y @memora/mcp</pre>
+  <p class="prose">The agent gets four tools: <code>remember</code>, <code>recall</code>,
+  <code>record_experience</code> — what it learned attempting a task, especially a failure — and
+  <code>recommend</code>, which tells it what previous attempts suggest before it starts. Flagged memories are
+  surfaced to the agent as explicit conflicts, so it asks rather than assuming.</p>
+</section>
+
+<!-- ============================ 10 ============================ -->
+<section class="page-break">
+  <div class="eyebrow">Section 10</div>
+  <h2>Recipes</h2>
+  <div class="rule"></div>
+
+  <h3>A chat application</h3>
+  <pre><span class="k">async function</span> handleTurn(userId, message) {
+  <span class="k">const</span> { results } = <span class="k">await</span> memora.recall({ userId, query: message, topK: <span class="o">5</span> });
+
+  <span class="k">const</span> reply = <span class="k">await</span> yourModel({
+    system: <span class="s">`What you know about this user:\n`</span> +
+            results.map(m => <span class="s">`- ${m.content}`</span>).join(<span class="s">"\n"</span>),
+    message,
+  });
+
+  <span class="c">// fire and forget — do not make the user wait for the write</span>
+  <span class="k">void</span> memora.remember({ userId, content: message, sessionId: conversationId });
+  <span class="k">return</span> reply;
+}</pre>
+
+  <h3>A support agent that must not guess</h3>
+  <pre><span class="k">const</span> { results } = <span class="k">await</span> memora.recall({
+  userId, query: ticketSubject, minConfidence: <span class="o">0.8</span>, types: [<span class="s">"fact"</span>, <span class="s">"instruction"</span>],
+});
+
+<span class="k">const</span> unresolved = results.filter(m => m.status === <span class="s">"flagged"</span>);
+<span class="k">if</span> (unresolved.length) escalateToHuman(unresolved);</pre>
+
+  <h3>Several agents, one user</h3>
+  <pre><span class="k">await</span> memora.remember({ userId, content, agentId: <span class="s">"billing-bot"</span> });
+<span class="k">await</span> memora.recall({ userId, query, agentId: <span class="s">"billing-bot"</span> });
+<span class="c">// the sales bot never reads the billing bot's notes</span></pre>
+
+  <h3>Safe retries</h3>
+  <pre><span class="k">await</span> memora.remember({ userId, content, idempotencyKey: messageId });
+<span class="c">// the same message id twice returns the first result — not a second set of memories</span></pre>
+</section>
+
+<!-- ============================ 11 ============================ -->
+<section class="page-break">
+  <div class="eyebrow">Section 11</div>
+  <h2>Limits, errors and what to do about them</h2>
+  <div class="rule"></div>
+
+  <table>
+    <thead><tr><th>Status</th><th>Means</th><th>What to do</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">401</td><td class="dim">Key missing, wrong or revoked.</td><td class="dim">Do not retry. Check the key.</td></tr>
+      <tr><td class="mono">403</td><td class="dim">The key lacks the scope — usually a read-only key trying to write.</td><td class="dim">Do not retry. Use a write key.</td></tr>
+      <tr><td class="mono">409</td><td class="dim">An idempotency key was reused with different content.</td><td class="dim">A bug on your side. Use a new key per distinct write.</td></tr>
+      <tr><td class="mono">429</td><td class="dim">Too many requests this minute.</td><td class="dim">Retry after the <code>Retry-After</code> header. The SDK does this for you.</td></tr>
+      <tr><td class="mono">402</td><td class="dim">Monthly quota spent.</td><td class="dim"><b>Do not retry</b> — waiting will not help. Upgrade the plan.</td></tr>
+    </tbody>
+  </table>
+
+  <p class="prose">Every response carries <code>RateLimit-Limit</code> and <code>RateLimit-Remaining</code>, so you
+  can back off before being refused rather than after.</p>
+
+  <table>
+    <thead><tr><th>Plan</th><th>Writes / month</th><th>Reads / month</th><th>Requests / minute</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">Free</td><td class="mono">1,000</td><td class="mono">10,000</td><td class="mono">60</td></tr>
+      <tr><td class="mono">Starter</td><td class="mono">25,000</td><td class="mono">250,000</td><td class="mono">300</td></tr>
+      <tr><td class="mono">Pro</td><td class="mono">250,000</td><td class="mono">2,500,000</td><td class="mono">1,200</td></tr>
+      <tr><td class="mono">Enterprise</td><td class="mono">unlimited</td><td class="mono">unlimited</td><td class="mono">6,000</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box warn">
+    <p><b>On latency.</b> A write costs a model call — expect seconds, not milliseconds, and never put it on the
+    path of rendering a response to your user. A read is fast in principle, but the numbers you would measure today
+    are dominated by an embeddings rate limit on our side, described overleaf.</p>
+  </div>
+</section>
+
+<!-- ============================ 12 ============================ -->
+<section class="page-break">
+  <div class="eyebrow">Section 12</div>
+  <h2>What we have not built yet</h2>
+  <div class="rule"></div>
+
+  <p class="prose">This is the honest list. Everything above works today and every example in this manual is real
+  output. Everything below is required before Memora is a product someone can rely on rather than a system that
+  works.</p>
+
+  <h3>Blocking — nothing runs for real until these are done</h3>
+  <table>
+    <thead><tr><th>Missing</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag risk">Blocker</span> <b>Embeddings capacity</b></td><td class="dim">The embeddings account has no payment method, which caps it at <b>three requests per minute</b>. That is why the second recall in Section 6 took twenty seconds and the first took half a second. No latency figure in this manual should be trusted until this is lifted, and no real traffic can be served.</td></tr>
+      <tr><td><span class="tag risk">Blocker</span> <b>Hosting</b></td><td class="dim">The container is built and boot-tested, the deploy runbook is written, and migrations run automatically before the app starts. There is no server, domain, TLS certificate or managed database to put it on. Today it runs on a laptop.</td></tr>
+      <tr><td><span class="tag risk">Blocker</span> <b>Billing</b></td><td class="dim">Usage is metered per model call and per request, and plan quotas are enforced. Nothing charges anyone, and there is no upgrade path — so the plan table opposite is real enforcement against prices nobody can pay.</td></tr>
+      <tr><td><span class="tag risk">Blocker</span> <b>Backups</b></td><td class="dim">No automated backup, and no restore has ever been tested. An untested backup is a belief, not a backup.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Serious — a buyer will ask for these</h3>
+  <table>
+    <thead><tr><th>Missing</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag warn">Serious</span> <b>Team accounts</b></td><td class="dim">One owner per organisation. No invites, no roles, no password reset, no email verification. A team cannot share an account safely.</td></tr>
+      <tr><td><span class="tag warn">Serious</span> <b>Alerting</b></td><td class="dim">Failures land in container logs. Nothing pages anyone when reconciliation starts failing, which is exactly when the audit trail silently stops being complete.</td></tr>
+      <tr><td><span class="tag warn">Serious</span> <b>Legal and privacy</b></td><td class="dim">Memora stores personal data about your users. Terms of service, a privacy policy, a DPA, PII redaction at write time and a dashboard audit log are prerequisites for a real customer, not polish.</td></tr>
+      <tr><td><span class="tag warn">Serious</span> <b>Event timestamps</b></td><td class="dim">A memory is stamped with when it was <em>written</em>, not when the thing happened. Replaying a historical conversation dates everything to today. Extraction works around this by reading dates out of the text; a first-class <code>occurred_at</code> field is the real fix.</td></tr>
+      <tr><td><span class="tag warn">Serious</span> <b>Choice of models</b></td><td class="dim">Claude and Voyage are wired in directly. An enterprise on Bedrock or Azure cannot adopt Memora without a bring-your-own-model path.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Known quality gaps</h3>
+  <table>
+    <thead><tr><th>Gap</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag blue">Next</span> <b>Ranking at scale</b></td><td class="dim">Described in Section 6. One dense conversation produced 210 memories for a single user, and three of five benchmark misses were the right fact never reaching the top five. Confidence and freshness need to discriminate rather than offset.</td></tr>
+      <tr><td><span class="tag blue">Next</span> <b>Temporal questions</b></td><td class="dim">50% on the temporal category of the LoCoMo benchmark — our weakest area, and the same root cause as event timestamps above.</td></tr>
+      <tr><td><span class="tag blue">Next</span> <b>Benchmark coverage</b></td><td class="dim">Scored 75% on a twenty-question sample of LoCoMo. The full benchmark is 1,986 questions and has not been run, so the number is indicative rather than publishable.</td></tr>
+      <tr><td><span class="tag blue">Watch</span> <b>Occasional malformed model output</b></td><td class="dim">Twice during development, a model call returned structurally corrupt output — once a mangled field name, once a memory whose content was the single word "test". Both are guarded against now (bad decisions are retried, bad grades are re-asked) but the underlying flakiness is real and worth watching in production.</td></tr>
+      <tr><td><span class="tag blue">Later</span> <b>Platform surface</b></td><td class="dim">No batch writes, no export, no webhooks. Individually small; collectively the difference between an API and a platform.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box note">
+    <p><b>What this list is not.</b> None of it is research, and none of it is unknown. The engine — extraction,
+    reconciliation, versioning, contradiction detection, hybrid retrieval — is built and measured. What remains is
+    the ordinary work of turning a system that works into a service someone else can depend on.</p>
+  </div>
+</section>
+
+<!--
+  Regenerate:
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless --disable-gpu --no-pdf-header-footer \
+      --print-to-pdf=docs/memora-user-manual.pdf \
+      --virtual-time-budget=12000 docs/user-manual.html
+
+  A4 portrait. Every table dump and code sample is real output captured from a
+  running instance — re-capture rather than hand-editing them if behaviour changes.
+-->

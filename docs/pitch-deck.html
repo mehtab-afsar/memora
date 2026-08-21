@@ -1,0 +1,563 @@
+<title>Memora Pitch Deck</title>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&display=swap">
+<style>
+  :root {
+    --paper: #f9f9f7;
+    --card: #ffffff;
+    --ink: #0b0b0b;
+    --muted: #52514e;
+    --faint: #8a8a85;
+    --rule: rgba(11,11,11,0.14);
+    --hair: rgba(11,11,11,0.07);
+    --signal: #2a78d6;
+    --signal-soft: rgba(42,120,214,0.08);
+    --good: #199e70;
+    --good-soft: rgba(25,158,112,0.10);
+    --warn: #c98500;
+    --warn-soft: rgba(201,133,0,0.11);
+    --risk: #cf4a3f;
+    --risk-soft: rgba(207,74,63,0.10);
+    --brand-accent: var(--signal);
+    --brand-paper: var(--paper);
+  }
+
+  @page { size: 13.333in 7.5in; margin: 0; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--paper); }
+  body {
+    color: var(--ink);
+    font-family: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .slide {
+    width: 13.333in;
+    height: 7.5in;
+    padding: 0.72in 0.9in;
+    page-break-after: always;
+    break-after: page;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--paper);
+  }
+  .slide:last-child { page-break-after: auto; }
+
+  .eyebrow {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10.5pt; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--faint);
+  }
+  h1 { font-size: 44pt; line-height: 1.02; letter-spacing: -0.03em; font-weight: 600; margin: 0; text-wrap: balance; }
+  h2 { font-size: 30pt; line-height: 1.06; letter-spacing: -0.028em; font-weight: 600; margin: 0; text-wrap: balance; }
+  h3 { font-size: 14pt; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+  p { margin: 0; }
+
+  .prose {
+    font-family: "Newsreader", Georgia, serif; font-weight: 300;
+    font-size: 15pt; line-height: 1.5; color: var(--muted);
+  }
+  .prose em { font-style: normal; color: var(--ink); font-weight: 400; }
+  .lead { font-size: 18pt; max-width: 26em; }
+
+  .slide-head { display: flex; align-items: baseline; gap: 0.22in; margin-bottom: 0.34in; }
+  .slide-head .rule { flex: 1; height: 1px; background: var(--rule); }
+  .body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 0.26in; }
+  .foot {
+    position: absolute; left: 0.9in; right: 0.9in; bottom: 0.42in;
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: "JetBrains Mono", monospace; font-size: 8.5pt; color: var(--faint);
+    letter-spacing: 0.08em;
+  }
+
+  /* cover */
+  .cover { justify-content: center; gap: 0.3in; }
+  .brandline { display: flex; align-items: center; gap: 0.16in; }
+  .brandline .name { font-size: 20pt; font-weight: 600; letter-spacing: -0.04em; }
+  .mark { color: var(--ink); display: block; }
+
+  /* part divider */
+  .divider { justify-content: center; background: var(--ink); color: var(--paper); }
+  .divider .eyebrow { color: rgba(249,249,247,0.55); }
+  .divider h1 { color: var(--paper); }
+  .divider .prose { color: rgba(249,249,247,0.75); }
+  .divider .prose em { color: var(--paper); }
+
+  /* grids */
+  .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.34in; }
+  .cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.24in; }
+  .cols-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.2in; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--rule);
+    padding: 0.28in 0.3in; display: flex; flex-direction: column; gap: 0.1in;
+  }
+  .card p { font-size: 11.5pt; line-height: 1.45; color: var(--muted); }
+  .card .n {
+    font-family: "JetBrains Mono", monospace; font-size: 9.5pt;
+    color: var(--signal); letter-spacing: 0.1em;
+  }
+
+  .stat { background: var(--card); border: 1px solid var(--rule); padding: 0.26in 0.28in; }
+  .stat .v {
+    font-size: 30pt; font-weight: 600; letter-spacing: -0.03em; line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .v.blue { color: var(--signal); }
+  .stat .l { font-size: 10.5pt; color: var(--muted); margin-top: 0.08in; line-height: 1.35; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 11.5pt; }
+  th, td { text-align: left; padding: 0.11in 0.16in; vertical-align: top; border-bottom: 1px solid var(--hair); }
+  thead th {
+    font-family: "JetBrains Mono", monospace; font-size: 8.5pt;
+    letter-spacing: 0.11em; text-transform: uppercase; color: var(--faint); font-weight: 500;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.dim { color: var(--muted); }
+  td.us { background: var(--signal-soft); }
+  th.us { background: var(--signal-soft); color: var(--signal); }
+  td.mono, .mono { font-family: "JetBrains Mono", monospace; font-size: 10pt; font-variant-numeric: tabular-nums; }
+  .bordered { border: 1px solid var(--rule); background: var(--card); }
+
+  pre {
+    font-family: "JetBrains Mono", monospace; font-size: 10pt; line-height: 1.55;
+    background: var(--ink); color: #f2f2ef; padding: 0.24in 0.28in; margin: 0;
+    border-radius: 2px; overflow: hidden; white-space: pre-wrap;
+  }
+  pre .c { color: #8b8b85; }
+  pre .k { color: #7fb2f0; }
+  pre .s { color: #9fd8a8; }
+  code { font-family: "JetBrains Mono", monospace; font-size: 0.88em; }
+
+  .tag {
+    display: inline-block; font-family: "JetBrains Mono", monospace; font-size: 8pt;
+    letter-spacing: 0.1em; text-transform: uppercase; padding: 0.03in 0.1in;
+    border: 1px solid currentColor;
+  }
+  .tag.good { color: var(--good); background: var(--good-soft); }
+  .tag.warn { color: var(--warn); background: var(--warn-soft); }
+  .tag.risk { color: var(--risk); background: var(--risk-soft); }
+
+  .flow { display: flex; align-items: stretch; gap: 0.14in; }
+  .flow .step {
+    flex: 1; background: var(--card); border: 1px solid var(--rule);
+    padding: 0.22in; display: flex; flex-direction: column; gap: 0.07in;
+  }
+  .flow .step .n { font-family: "JetBrains Mono", monospace; font-size: 9pt; color: var(--signal); }
+  .flow .step h3 { font-size: 12pt; }
+  .flow .step p { font-size: 10.5pt; color: var(--muted); line-height: 1.4; }
+  .flow .arrow { align-self: center; color: var(--faint); font-size: 14pt; }
+
+  ul.ticks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.13in; }
+  ul.ticks li { display: grid; grid-template-columns: 0.22in 1fr; gap: 0.12in; font-size: 12pt; line-height: 1.4; }
+  ul.ticks li .m { color: var(--good); font-weight: 600; }
+  ul.ticks li .x { color: var(--risk); font-weight: 600; }
+  ul.ticks li span.t { color: var(--muted); }
+  ul.ticks li span.t b { color: var(--ink); font-weight: 600; }
+</style>
+
+<!-- ============================= COVER ============================= -->
+<section class="slide cover">
+  <div class="brandline">
+    <svg class="mark" viewBox="0 0 64 64" width="42" height="42" fill="none"><circle cx="32.0" cy="10.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="51.05" cy="21.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="54.0" cy="32.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="51.05" cy="43.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="43.0" cy="51.05" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="32.0" cy="54.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="21.0" cy="51.05" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="12.95" cy="43.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="10.0" cy="32.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="12.95" cy="21.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="21.0" cy="12.95" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="32.0" cy="32.0" r="3.4" fill="currentColor"/><path d="M35.7 25.59 L39.7 18.66" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" fill="none"/><circle cx="43.0" cy="12.95" r="4.6" fill="var(--brand-accent, #2A78D6)"/></svg>
+    <span class="name">Memora</span>
+  </div>
+  <h1>Memory your compliance<br>team can read.</h1>
+  <p class="prose lead">A hosted long-term memory layer for AI applications — one that can always tell you what it knows about someone, where it learned it, and why it changed its mind.</p>
+  <div style="margin-top:0.2in" class="eyebrow">Pitch &amp; technical brief · 20 August 2026</div>
+  <div class="foot"><span>MEMORA</span><span>01</span></div>
+</section>
+
+<!-- ============================= PART ONE ============================= -->
+<section class="slide divider">
+  <div class="eyebrow">Part one</div>
+  <h1 style="margin-top:0.18in">The pitch</h1>
+  <p class="prose lead" style="margin-top:0.2in">Why this exists, who needs it, and what makes it defensible.</p>
+  <div class="foot" style="color:rgba(249,249,247,0.4)"><span>PART ONE</span><span>02</span></div>
+</section>
+
+<section class="slide">
+  <div class="slide-head"><div class="eyebrow">The problem</div><span class="rule"></span></div>
+  <div class="body">
+    <h2>Every AI product forgets, and the fixes are worse than the problem.</h2>
+    <div class="cols-3">
+      <div class="card">
+        <span class="n">TODAY'S FIX 01</span>
+        <h3>Stuff the whole history in</h3>
+        <p>Send every past message with every request. Costs grow linearly, latency with them, and the model still misses the one line that mattered.</p>
+      </div>
+      <div class="card">
+        <span class="n">TODAY'S FIX 02</span>
+        <h3>Dump it in a vector store</h3>
+        <p>Embed the transcript and hope similarity finds it. Nothing decides what was worth keeping, so noise and signal rank alike.</p>
+      </div>
+      <div class="card">
+        <span class="n">TODAY'S FIX 03</span>
+        <h3>Overwrite as you go</h3>
+        <p>Keep one row per fact and replace it. The moment a customer asks "why did it think that?", there is no answer left to give.</p>
+      </div>
+    </div>
+    <p class="prose" style="max-width:44em">All three share a failure: <em>they store text, not knowledge.</em> None of them can say what is currently true about a person, how confident it is, or what it believed last month.</p>
+  </div>
+  <div class="foot"><span>THE PROBLEM</span><span>03</span></div>
+</section>
+
+<section class="slide">
+  <div class="slide-head"><div class="eyebrow">What Memora is</div><span class="rule"></span></div>
+  <div class="body">
+    <h2>Two calls. Everything else is our problem.</h2>
+    <div class="cols-2">
+      <div>
+        <pre><span class="c">// after the user speaks</span>
+<span class="k">await</span> memora.remember({
+  userId, content: userMessage
+});
+
+<span class="c">// before you answer</span>
+<span class="k">const</span> { results } = <span class="k">await</span> memora.recall({
+  userId, query: userMessage
+});</pre>
+        <p class="prose" style="margin-top:0.2in; font-size:13pt">Send what someone said. Ask for what matters now. Memora decides what was worth keeping, notices when it changes, and hands back the few facts that bear on this moment — each one carrying the reason it was returned.</p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:0.16in">
+        <div class="card"><h3>It extracts, not archives</h3><p>Durable facts, preferences, goals and decisions — not transcripts.</p></div>
+        <div class="card"><h3>It versions, never overwrites</h3><p>A changed fact links to the one it replaced, with the reason it did.</p></div>
+        <div class="card"><h3>It surfaces contradictions</h3><p>When two things can't both be true, both come back flagged. It does not pick a side quietly.</p></div>
+        <div class="card"><h3>It explains every answer</h3><p>Similarity, confidence, freshness, and a sentence a human can read.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>WHAT MEMORA IS</span><span>04</span></div>
+</section>
+
+<section class="slide">
+  <div class="slide-head"><div class="eyebrow">The wedge</div><span class="rule"></span></div>
+  <div class="body">
+    <h2>The category leader made a choice that leaves a door open.</h2>
+    <p class="prose" style="max-width:46em">In April 2026, mem0 — 63.7k GitHub stars, the default answer for agent memory — rebuilt its algorithm around append-only extraction. When a fact changes, the new one lives beside the old and conflicts are resolved silently at read time. It is faster, and it is a real engineering result.</p>
+    <div class="bordered" style="padding:0.3in; border-left:3px solid var(--signal)">
+      <p class="prose" style="font-size:16pt"><em>It also means their architecture cannot tell you why it believes something.</em> There is no stated reason, no flagged conflict, no version with an explanation attached. For a consumer chatbot that is a fine trade. For anyone who has to answer to a regulator, a customer, or an auditor, it is disqualifying.</p>
+    </div>
+    <p class="prose" style="max-width:46em">Memora keeps the judgement and moves it off the response path — same speed, full audit trail. <em>"Memory your compliance team can read" is a sentence they architecturally cannot say.</em></p>
+  </div>
+  <div class="foot"><span>THE WEDGE</span><span>05</span></div>
+</section>
+
+<section class="slide">
+  <div class="slide-head"><div class="eyebrow">Proof</div><span class="rule"></span><span class="eyebrow mono">measured, not asserted</span></div>
+  <div class="body">
+    <div class="cols-4">
+      <div class="stat"><div class="v blue">75%</div><div class="l">LoCoMo, first run on data never tuned against</div></div>
+      <div class="stat"><div class="v">100%</div><div class="l">On our own regression set (14/14)</div></div>
+      <div class="stat"><div class="v">17/17</div><div class="l">End-to-end through the real HTTP surface</div></div>
+      <div class="stat"><div class="v">$9.87</div><div class="l">Model cost per 1,000 memories</div></div>
+    </div>
+    <div class="bordered">
+      <table>
+        <thead><tr><th>LoCoMo category</th><th>Score</th><th>What it tests</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">abstain</td><td class="mono">100% (5/5)</td><td class="dim">Refusing to answer what it was never told — the hallucination check</td></tr>
+          <tr><td class="mono">open-domain</td><td class="mono">100% (1/1)</td><td class="dim">Inference beyond what was stated</td></tr>
+          <tr><td class="mono">single-hop</td><td class="mono">71% (5/7)</td><td class="dim">One fact, directly recalled</td></tr>
+          <tr><td class="mono">multi-hop</td><td class="mono">67% (2/3)</td><td class="dim">Combining facts from different conversations</td></tr>
+          <tr><td class="mono">temporal</td><td class="mono">50% (2/4)</td><td class="dim">When something happened — our weakest area, and we know why</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose" style="font-size:12.5pt; max-width:52em">mem0 publishes 92.5 on the full LoCoMo set using partial-credit F1 scoring. Ours is a 20-question stratified sample graded strictly by a judge model, so the two are <em>not directly comparable</em> — and we will say so until they are. Three of our five misses were retrieval simply not surfacing the fact, which is a fixable ranking problem, not a reasoning one.</p>
+  </div>
+  <div class="foot"><span>PROOF</span><span>06</span></div>
+</section>
+
+<section class="slide">
+  <div class="slide-head"><div class="eyebrow">Who buys this</div><span class="rule"></span></div>
+  <div class="body">
+    <h2>Sell to the teams for whom "why did it say that?" has a legal answer.</h2>
+    <div class="cols-3">
+      <div class="card">
+        <span class="n">01 · SUPPORT</span>
+        <h3>Customer support platforms</h3>
+        <p>An agent that remembers a customer's history across tickets, and an audit trail when the customer disputes what it was told.</p>
+      </div>
+      <div class="card">
+        <span class="n">02 · FINTECH</span>
+        <h3>Financial services</h3>
+        <p>Suitability and KYC facts change. Regulators ask what you knew and when. Versioned memory with stated reasons is the answer.</p>
+      </div>
+      <div class="card">
+        <span class="n">03 · HEALTH</span>
+        <h3>Health &amp; care</h3>
+        <p>An allergy contradicted by a later statement must be flagged for a human, never silently resolved. That is our default behaviour.</p>
+      </div>
+    </div>
+    <p class="prose" style="max-width:46em">Same product underneath. The wedge is that in these three markets, the audit trail is not a feature — it is the reason procurement signs.</p>
+  </div>
+  <div class="foot"><span>MARKET</span><span>07</span></div>
+</section>
+
+<section class="slide">
+  <div class="slide-head"><div class="eyebrow">Business model</div><span class="rule"></span></div>
+  <div class="body">
+    <h2>Metered on memories written, because that is what costs us money.</h2>
+    <div class="bordered">
+      <table>
+        <thead><tr><th>Plan</th><th>Writes / month</th><th>Reads / month</th><th>Rate limit</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">Free</td><td class="mono">1,000</td><td class="mono">10,000</td><td class="mono">60/min</td><td class="dim">Enforced today</td></tr>
+          <tr><td class="mono">Starter</td><td class="mono">25,000</td><td class="mono">250,000</td><td class="mono">300/min</td><td class="dim">Enforced today</td></tr>
+          <tr><td class="mono">Pro</td><td class="mono">250,000</td><td class="mono">2,500,000</td><td class="mono">1,200/min</td><td class="dim">Enforced today</td></tr>
+          <tr><td class="mono">Enterprise</td><td class="mono">unlimited</td><td class="mono">unlimited</td><td class="mono">6,000/min</td><td class="dim">Enforced today</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cols-2">
+      <p class="prose">Every request is already checked against scope, rate limit and monthly quota, and every model call is metered per project and per key. <em>The enforcement is built. The prices are not set</em> — the one number we have is $9.87 of model spend per 1,000 memories, and whatever we charge has to sit above it with room.</p>
+      <p class="prose">Reads are cheap for us and valuable to customers, so every tier allows ten reads per write. That ratio is deliberate: it rewards the behaviour we want — recall before every answer.</p>
+    </div>
+  </div>
+  <div class="foot"><span>BUSINESS MODEL</span><span>08</span></div>
+</section>
+
+<section class="slide">
+  <div class="slide-head"><div class="eyebrow">Where we are</div><span class="rule"></span></div>
+  <div class="body">
+    <h2>The engine is finished. The business around it is not.</h2>
+    <div class="cols-2">
+      <div class="bordered" style="padding:0.3in">
+        <div class="eyebrow" style="margin-bottom:0.18in">Built and proven</div>
+        <ul class="ticks">
+          <li><span class="m">✓</span><span class="t"><b>Memory engine</b> — extraction, reconciliation, versioning, contradictions</span></li>
+          <li><span class="m">✓</span><span class="t"><b>Hybrid retrieval</b> — semantic and keyword search, rank-fused</span></li>
+          <li><span class="m">✓</span><span class="t"><b>Dashboard</b> — browse, filter, evidence trails, version timelines</span></li>
+          <li><span class="m">✓</span><span class="t"><b>SDK and MCP server</b> — Claude Code and Cursor can use it directly</span></li>
+          <li><span class="m">✓</span><span class="t"><b>Guards</b> — key scopes, rate limits, quotas, idempotency</span></li>
+          <li><span class="m">✓</span><span class="t"><b>Eval harness</b> — every claim on this page is reproducible</span></li>
+        </ul>
+      </div>
+      <div class="bordered" style="padding:0.3in">
+        <div class="eyebrow" style="margin-bottom:0.18in">Not yet</div>
+        <ul class="ticks">
+          <li><span class="x">✕</span><span class="t"><b>Not deployed</b> — runs locally; no hosting, no domain, no backups</span></li>
+          <li><span class="x">✕</span><span class="t"><b>No billing</b> — metering is done, nothing charges anyone</span></li>
+          <li><span class="x">✕</span><span class="t"><b>No team accounts</b> — single owner, no invites or password reset</span></li>
+          <li><span class="x">✕</span><span class="t"><b>No alerting</b> — failures land in logs, nobody is paged</span></li>
+          <li><span class="x">✕</span><span class="t"><b>No legal</b> — ToS, privacy policy and DPA are not optional here</span></li>
+          <li><span class="x">✕</span><span class="t"><b>No customers</b> — nobody has used this but us</span></li>
+        </ul>
+      </div>
+    </div>
+    <p class="prose" style="max-width:48em">Two to four weeks of unglamorous work stands between this and a first paying user. <em>None of it is research.</em></p>
+  </div>
+  <div class="foot"><span>STATUS</span><span>09</span></div>
+</section>
+
+<!-- ============================= PART TWO ============================= -->
+<section class="slide divider">
+  <div class="eyebrow">Part two</div>
+  <h1 style="margin-top:0.18in">How it works,<br>and what it still needs</h1>
+  <p class="prose lead" style="margin-top:0.2in">The mechanism, the integration, and an honest list of everything missing.</p>
+  <div class="foot" style="color:rgba(249,249,247,0.4)"><span>PART TWO</span><span>10</span></div>
+</section>
+
+<section class="slide">
+  <div class="slide-head"><div class="eyebrow">How it works · writing</div><span class="rule"></span></div>
+  <div class="body">
+    <h2>Writes return immediately. Judgement happens behind the response.</h2>
+    <div class="flow">
+      <div class="step"><span class="n">01</span><h3>Extract</h3><p>One model call turns a message into durable candidate facts — and discards reactions, acknowledgements and small talk.</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><span class="n">02</span><h3>Embed</h3><p>All candidates in a single batched call, so a busy write costs one round trip, not one per fact.</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><span class="n">03</span><h3>Store &amp; return</h3><p>Everything is written and the caller gets their response. Nothing waits on a decision.</p></div>
+      <div class="arrow">→</div>
+      <div class="step" style="border-color:var(--signal); background:var(--signal-soft)"><span class="n">04</span><h3>Reconcile</h3><p>Afterwards, each new memory is judged against what was already known — and the record is repaired.</p></div>
+    </div>
+    <div class="bordered">
+      <table>
+        <thead><tr><th>Verdict</th><th>What happens to the record</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">ADD</td><td class="dim">Genuinely new. Nothing to repair.</td></tr>
+          <tr><td class="mono">UPDATE</td><td class="dim">Links the new version to the old one and retires the old, with the reason it changed.</td></tr>
+          <tr><td class="mono">MERGE</td><td class="dim">Folds added detail into a single combined fact.</td></tr>
+          <tr><td class="mono">IGNORE</td><td class="dim">A restatement — refreshes the original's confidence instead of duplicating it.</td></tr>
+          <tr><td class="mono">FLAG</td><td class="dim">Cannot both be true. Both memories are marked unresolved and surfaced to a human.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>HOW IT WORKS · WRITING</span><span>11</span></div>
+</section>
+
+<section class="slide">
+  <div class="slide-head"><div class="eyebrow">How it works · reading</div><span class="rule"></span></div>
+  <div class="body">
+    <h2>Two searches, fused — and an answer that shows its working.</h2>
+    <div class="cols-2">
+      <div style="display:flex; flex-direction:column; gap:0.16in">
+        <div class="card"><h3>Meaning and words, together</h3><p>Embeddings find what a question is about; a full-text index finds the exact strings embeddings blur — cluster names, ticket ids, channel handles. The two rankings are fused, so a fact found either way still surfaces.</p></div>
+        <div class="card"><h3>Ranked on more than similarity</h3><p>Relevance is 60% match, 25% how confident we are the fact is true, 15% how recently it was confirmed. An old, shaky memory loses to a fresh, certain one.</p></div>
+        <div class="card"><h3>History travels with the fact</h3><p>Superseded versions do not compete for a slot in the ranking, but they ride along — so "where do they work?" and "did they ever work at X?" are both answerable.</p></div>
+      </div>
+      <div>
+        <pre><span class="c">// what comes back</span>
+{
+  content: <span class="s">"Is allergic to peanuts"</span>,
+  type: <span class="s">"fact"</span>,
+  status: <span class="s">"active"</span>,
+  relevanceScore: 0.87,
+  similarity: 0.84,
+  confidence: 0.95,
+  freshness: 0.99,
+  matchedOn: <span class="s">"both"</span>,
+  reason: <span class="s">"high semantic match (0.84),</span>
+<span class="s">           high confidence,</span>
+<span class="s">           recently confirmed"</span>,
+  history: []
+}</pre>
+        <p class="prose" style="margin-top:0.18in; font-size:12.5pt">Every field is there so an application — or an auditor — can see <em>why this memory and not another one</em>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>HOW IT WORKS · READING</span><span>12</span></div>
+</section>
+
+<section class="slide">
+  <div class="slide-head"><div class="eyebrow">How to use it</div><span class="rule"></span><span class="eyebrow mono">five minutes</span></div>
+  <div class="body">
+    <div class="cols-2">
+      <div>
+        <h3 style="margin-bottom:0.14in">1 · Install and write</h3>
+        <pre>npm install @memora/client
+
+<span class="k">import</span> { Memora } <span class="k">from</span> <span class="s">"@memora/client"</span>;
+<span class="k">const</span> memora = <span class="k">new</span> Memora({ apiKey });
+
+<span class="k">await</span> memora.remember({
+  userId: <span class="s">"user_123"</span>,
+  content: <span class="s">"I'm vegan and allergic to peanuts."</span>
+});</pre>
+        <h3 style="margin:0.24in 0 0.14in">2 · Recall before you answer</h3>
+        <pre><span class="k">const</span> { results } = <span class="k">await</span> memora.recall({
+  userId, query: userMessage, topK: 5
+});
+
+<span class="k">const</span> system = results
+  .map(m => <span class="s">`- ${m.content}`</span>)
+  .join(<span class="s">"\n"</span>);</pre>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:0.16in">
+        <div class="card"><h3>Or skip the code entirely</h3><p>An MCP server ships with it. Point Claude Code or Cursor at Memora and the agent gets <code>remember</code>, <code>recall</code>, and the ability to record what it learned from a failed task.</p></div>
+        <div class="card"><h3>Ask why, any time</h3><p><code>explain(memoryId)</code> returns the full evidence trail: every source excerpt, every version, and the stated reason for each change.</p></div>
+        <div class="card"><h3>Narrow it down</h3><p>Filter recall by memory type, minimum confidence, time window, agent or session — so a support bot and a sales bot never read each other's notes.</p></div>
+        <div class="card"><h3>Environments, not guesswork</h3><p>Every key is scoped to one environment. A development key cannot read production memories. Ever.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>HOW TO USE IT</span><span>13</span></div>
+</section>
+
+<section class="slide">
+  <div class="slide-head"><div class="eyebrow">Under the hood</div><span class="rule"></span></div>
+  <div class="body">
+    <h2>Deliberately boring infrastructure.</h2>
+    <div class="cols-4">
+      <div class="card"><span class="n">STORAGE</span><h3>One Postgres</h3><p>Memories, embeddings, full-text index, job queue, rate limits and idempotency all in the same database. No Redis, no vector service, no second thing to page someone about.</p></div>
+      <div class="card"><span class="n">INTELLIGENCE</span><h3>Claude + Voyage</h3><p>Claude extracts and judges; Voyage embeds. Both are swappable behind an interface — a requirement for enterprises on Bedrock or Azure.</p></div>
+      <div class="card"><span class="n">RUNTIME</span><h3>Stateless app</h3><p>Next.js in a 290 MB container, non-root, migrations baked in. Scale by adding instances; limits stay correct because they are counted in the database.</p></div>
+      <div class="card"><span class="n">DURABILITY</span><h3>A real queue</h3><p>Reconciliation jobs are rows, not promises. A crash, a deploy or a failed model call means a retry — never a memory that silently never got judged.</p></div>
+    </div>
+    <p class="prose" style="max-width:48em">Every architectural choice here was made to reduce the number of things that can be quietly wrong at 3am. <em>The audit trail is the product; losing part of it is not an acceptable failure mode.</em></p>
+  </div>
+  <div class="foot"><span>ARCHITECTURE</span><span>14</span></div>
+</section>
+
+<section class="slide">
+  <div class="slide-head"><div class="eyebrow">What is missing</div><span class="rule"></span><span class="eyebrow mono">blockers first</span></div>
+  <div class="body">
+    <h2>Nothing on this list is research. All of it is required.</h2>
+    <div class="bordered">
+      <table>
+        <thead><tr><th>Needed</th><th>Why it blocks</th><th>Who</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag risk">Blocker</span> <b>Voyage payment method</b></td><td class="dim">The embeddings account is capped at 3 requests per minute. The product cannot serve real traffic, and no latency figure is meaningful until it is lifted.</td><td class="mono">You</td></tr>
+          <tr><td><span class="tag risk">Blocker</span> <b>Hosting</b></td><td class="dim">The container and compose file are built and boot-tested. There is no server, domain, TLS or managed database to put them on.</td><td class="mono">You</td></tr>
+          <tr><td><span class="tag risk">Blocker</span> <b>Billing</b></td><td class="dim">Usage is metered per model call and per request — the hard half. Stripe, plan upgrades and payment failure handling are not built.</td><td class="mono">Both</td></tr>
+          <tr><td><span class="tag warn">Serious</span> <b>Team accounts</b></td><td class="dim">One owner per organisation. No invites, roles, password reset or email verification — every one of which a buyer will ask for.</td><td class="mono">Us</td></tr>
+          <tr><td><span class="tag warn">Serious</span> <b>Observability</b></td><td class="dim">Failures land in container logs. No error tracking, no alerting, no runbook for a customer-visible incident.</td><td class="mono">Us</td></tr>
+          <tr><td><span class="tag warn">Serious</span> <b>Legal &amp; privacy</b></td><td class="dim">We would be storing personal data about other companies' users. ToS, privacy policy, DPA, PII redaction and an audit log are prerequisites, not polish.</td><td class="mono">You</td></tr>
+          <tr><td><span class="tag" style="color:var(--signal); background:var(--signal-soft)">Next</span> <b>Retrieval at scale</b></td><td class="dim">A dense conversation produced 210 memories for one user; three of five benchmark misses were the right fact never being retrieved. Ranking, not reasoning.</td><td class="mono">Us</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>WHAT IS MISSING</span><span>15</span></div>
+</section>
+
+<section class="slide">
+  <div class="slide-head"><div class="eyebrow">The plan</div><span class="rule"></span></div>
+  <div class="body">
+    <h2>Four weeks to a first paying customer.</h2>
+    <div class="cols-4">
+      <div class="card"><span class="n">WEEK 1</span><h3>Unblock and deploy</h3><p>Voyage billing. Managed Postgres, a domain, TLS, backups with a tested restore. The image already boots; it needs somewhere to boot.</p></div>
+      <div class="card"><span class="n">WEEK 2</span><h3>Charge for it</h3><p>Stripe on top of the existing metering, plan upgrades, dunning. Team invites, roles, password reset.</p></div>
+      <div class="card"><span class="n">WEEK 3</span><h3>Make it observable</h3><p>Error tracking, alerting on failed reconciliation, a runbook. Publish the SDK and MCP server so people can actually install them.</p></div>
+      <div class="card"><span class="n">WEEK 4</span><h3>Prove it harder</h3><p>Full LoCoMo and LongMemEval rather than a sample. Fix retrieval at scale. Legal pack. Then onboard the first design partner.</p></div>
+    </div>
+    <div class="bordered" style="padding:0.3in; border-left:3px solid var(--signal); margin-top:0.1in">
+      <p class="prose" style="font-size:15pt">The riskiest thing on this timeline is not technical. <em>It is that nobody outside this room has used it yet</em> — which is why week four ends with a design partner, not a launch.</p>
+    </div>
+  </div>
+  <div class="foot"><span>THE PLAN</span><span>16</span></div>
+</section>
+
+<section class="slide">
+  <div class="slide-head"><div class="eyebrow">The ask</div><span class="rule"></span></div>
+  <div class="body">
+    <h2>Three decisions, and one of them changes everything below it.</h2>
+    <div class="cols-3">
+      <div class="card">
+        <span class="n">DECISION 01</span>
+        <h3>Open source, or not?</h3>
+        <p>mem0's 63.7k stars are a distribution engine we cannot out-run from a closed repo. An Apache-2 core with a hosted tier is the standard answer — and it gives away the engine. This decision shapes every other one.</p>
+      </div>
+      <div class="card">
+        <span class="n">DECISION 02</span>
+        <h3>Is Experience Memory its own product?</h3>
+        <p>Agents recording what they learned from failed tasks, and being advised by it before the next attempt. It is the one thing mem0 has no equivalent of, and today it is a tab in a dashboard rather than a thing with a name and a price.</p>
+      </div>
+      <div class="card">
+        <span class="n">DECISION 03</span>
+        <h3>Which vertical goes first?</h3>
+        <p>Support, fintech or health. The answer sets the docs, the examples, the compliance work and the first ten conversations. Picking one beats being generically available to all three.</p>
+      </div>
+    </div>
+    <p class="prose" style="max-width:48em">Everything else on the roadmap is work we can simply do. These three are yours, and until they are answered the sequencing is a guess.</p>
+  </div>
+  <div class="foot"><span>THE ASK</span><span>17</span></div>
+</section>
+
+<section class="slide cover" style="justify-content:center">
+  <div class="brandline"><svg class="mark" viewBox="0 0 64 64" width="42" height="42" fill="none"><circle cx="32.0" cy="10.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="51.05" cy="21.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="54.0" cy="32.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="51.05" cy="43.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="43.0" cy="51.05" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="32.0" cy="54.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="21.0" cy="51.05" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="12.95" cy="43.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="10.0" cy="32.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="12.95" cy="21.0" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="21.0" cy="12.95" r="2.1" fill="currentColor" opacity="0.55"/><circle cx="32.0" cy="32.0" r="3.4" fill="currentColor"/><path d="M35.7 25.59 L39.7 18.66" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" fill="none"/><circle cx="43.0" cy="12.95" r="4.6" fill="var(--brand-accent, #2A78D6)"/></svg><span class="name">Memora</span></div>
+  <h1 style="margin-top:0.1in">Storage is table stakes.<br>Knowing why is the product.</h1>
+  <p class="prose lead" style="margin-top:0.16in">Every number in this deck is reproducible: <code>pnpm test</code>, <code>pnpm eval</code>, <code>pnpm smoke</code>.</p>
+  <div class="foot"><span>MEMORA · AUGUST 2026</span><span>18</span></div>
+</section>
+
+<!--
+  Regenerate the PDF after editing:
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless --disable-gpu --no-pdf-header-footer \
+      --print-to-pdf=docs/memora-pitch-deck.pdf \
+      --virtual-time-budget=12000 docs/pitch-deck.html
+
+  Slides are 13.333in x 7.5in — standard 16:9, so it drops into Keynote or
+  Google Slides at native size. Every number in it comes from evals/results.
+-->

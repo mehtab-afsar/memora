@@ -40,6 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Eval output. Every run writes one; they are reproducible with `pnpm eval`.
+# The runs worth keeping are promoted to evals/baselines/ by hand.
+/evals/results/
+
 # Benchmark data — LoCoMo and LongMemEval are licensed for use, not for
 # redistribution. Download and convert them locally (see evals/README.md).
 /evals/datasets/raw/

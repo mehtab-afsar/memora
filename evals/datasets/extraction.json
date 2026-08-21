@@ -153,6 +153,23 @@
           "7 May|May 7|2023-05-07"
         ]
       }
+    },
+    {
+      "id": "undated-relative-time",
+      "text": "Quick update: I moved from Berlin to Lisbon last month for a new job at Cobalt Labs.",
+      "why": "Relative time with no timestamp to resolve against. Asking for absolute dates made the model narrate its own uncertainty into the memory text \u2014 'on a month before the messagessage was date, previisely unknown' \u2014 which is worse than the plain relative phrasing it replaced. A memory is a statement about the user, never commentary about the input.",
+      "expect": {
+        "minCount": 2,
+        "mustMention": [
+          "Lisbon"
+        ],
+        "mustNotMatch": [
+          "\\bmessages?\\b",
+          "precisely unknown",
+          "approximate\\)",
+          "\\bunknown\\b"
+        ]
+      }
     }
   ]
 }
