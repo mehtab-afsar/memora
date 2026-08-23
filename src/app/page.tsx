@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { auth } from "@/features/auth/lib/auth";
+import { currentUser } from "@/features/auth/lib/session";
 import { getCurrentOrgForUser, getFirstProjectForOrg } from "@/lib/org";
 import { LandingPage } from "@/features/landing/components/landing-page";
 
@@ -11,12 +11,16 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  // `currentUser` rather than the raw session: a JWT cookie outlives the user
+  // row it names, and treating a stale one as signed in bounced visitors
+  // through /onboarding to /login — making the public landing page
+  // unreachable for anyone who had ever logged in.
+  const user = await currentUser();
+  if (!user) {
     return <LandingPage />;
   }
 
-  const org = await getCurrentOrgForUser(session.user.id);
+  const org = await getCurrentOrgForUser(user.id);
   if (!org) {
     redirect("/onboarding");
   }

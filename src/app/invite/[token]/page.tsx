@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth } from "@/features/auth/lib/auth";
+import { currentUser } from "@/features/auth/lib/session";
 import { previewInvitation } from "@/lib/team";
 import { AcceptInvitation } from "@/features/team/components/accept-invitation";
 
@@ -21,7 +21,9 @@ import { AcceptInvitation } from "@/features/team/components/accept-invitation";
  */
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const [invitation, session] = await Promise.all([previewInvitation(token), auth()]);
+  // `currentUser`, not the raw session — a cookie naming a deleted user must
+  // not make this page claim you are signed in as them.
+  const [invitation, user] = await Promise.all([previewInvitation(token), currentUser()]);
 
   if (!invitation) {
     return (
@@ -38,7 +40,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     );
   }
 
-  const signedInAs = session?.user?.email ?? null;
+  const signedInAs = user?.email ?? null;
   const emailMatches = signedInAs?.toLowerCase() === invitation.email;
 
   return (

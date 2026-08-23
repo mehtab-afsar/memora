@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Supabase CLI scratch. Nothing here is ours — the project talks to
+    // Supabase through DATABASE_URL and drizzle migrations, not the CLI, so
+    // this is leftover generated code and linting it means 150 errors in files
+    // nobody wrote.
+    "supabase/**",
   ]),
 ]);
 

@@ -49,3 +49,6 @@ next-env.d.ts
 /evals/datasets/raw/
 /evals/datasets/locomo.json
 /evals/datasets/longmemeval.json
+
+# Supabase CLI scratch — this project uses DATABASE_URL + drizzle, not the CLI.
+supabase/
