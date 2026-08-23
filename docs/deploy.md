@@ -192,15 +192,27 @@ The numbers are placeholders until pricing is decided. The enforcement is not.
 
 Say this out loud before onboarding anyone:
 
-- **No billing.** Usage is metered per call (`usage_events`) and per request
-  (`api_requests`), which is the hard half — but nothing charges anyone, and
-  nothing stops a free account from spending your model budget beyond its quota.
+- **Quality is unverified.** The last honest measurement was 75% on a LoCoMo
+  sample. Since then extraction changed twice and the benchmark has not been
+  re-run, because Voyage is capped at 3 requests a minute without a payment
+  method. Everything else on this list is work; this one is the risk.
+- **Nothing is deployed.** There is no host, no domain and no TLS certificate —
+  the app runs on a laptop against hosted Supabase.
 - **No error tracking or alerting.** Failures land in container logs. Nobody is
   paged.
-- **Accounts are single-owner.** No invites, no roles, no password reset, no
-  email verification.
-- **No PII handling and no dashboard audit log.** You will be storing personal
-  data belonging to other companies' users; a ToS, a privacy policy and a DPA
-  are not optional.
-- **No load test.** The write path has never been run at concurrency, because
-  the Voyage rate limit makes that impossible today.
+- **No load test.** The write path has never been run at concurrency, for the
+  same Voyage reason.
+- **No prices**, and no decision on a payment provider (see
+  [billing.md](billing.md)). The billing code is built and unused.
+- **No email provider.** Invitations are created and handed back as a copyable
+  link rather than sent. Password reset and email verification do not exist at
+  all, so a forgotten password currently needs an operator.
+- **No dashboard audit log.** Who changed a role, revoked a key, or erased a
+  user is not recorded anywhere a customer can read.
+- **The legal pages are drafts** with bracketed placeholders for the things only
+  a lawyer can fill in, and they say so on every page.
+
+Backups are worth stating plainly rather than assuming: erasure removes rows
+from the live database, but whatever the host retains as point-in-time backups
+still contains them until those age out. That window belongs in the privacy
+policy once it is known.
