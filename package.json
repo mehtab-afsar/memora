@@ -11,7 +11,7 @@
     "db:setup": "tsx scripts/db-setup.ts",
     "db:check": "tsx scripts/db-check.ts",
     "db:reset": "tsx scripts/db-reset.ts",
-    "build:packages": "pnpm --filter @memora/client build && pnpm --filter @memora/mcp build",
+    "build:packages": "pnpm --filter @memora/client build && pnpm --filter @memora/mcp build && pnpm --filter @memora/cli build",
     "test": "vitest run",
     "test:watch": "vitest",
     "eval": "tsx evals/run.ts",
@@ -21,6 +21,8 @@
     "smoke": "tsx scripts/smoke-api.ts",
     "smoke:erasure": "tsx scripts/smoke-erasure.ts",
     "smoke:team": "tsx scripts/smoke-team.ts",
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "smoke:environments": "tsx scripts/smoke-environments.ts",
     "cache:probe": "tsx scripts/cache-probe.ts"
   },
   "dependencies": {

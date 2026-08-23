@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { FlaskConical, Search, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TypeBadge } from "@/components/shared/type-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { runRecallAction, runRememberAction } from "@/features/playground/actions/playground-actions";
+import { DEMO_QUERIES, DEMO_USER_ID } from "@/lib/demo-constants";
 import type { RecallResult, RememberOutcome } from "@/lib/memory-engine";
 
 function ScoreBar({ label, value, colorVar }: { label: string; value: number; colorVar: string }) {
@@ -36,6 +37,7 @@ export function PlaygroundForm({
   environmentId: string;
 }) {
   const [isPending, startTransition] = useTransition();
+  const queryRef = useRef<HTMLTextAreaElement>(null);
   const [results, setResults] = useState<RecallResult[] | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
@@ -43,7 +45,10 @@ export function PlaygroundForm({
   const [written, setWritten] = useState<RememberOutcome[] | null>(null);
   // Kept in state rather than left to the form so both halves share it — the
   // whole point is to write for a user and then immediately recall the same one.
-  const [endUserId, setEndUserId] = useState("user_demo_1");
+  // The end-user seeded into every new project. Defaulting to anything else
+  // means the first query a new signup runs matches nothing, which is a
+  // truthful answer and a terrible introduction.
+  const [endUserId, setEndUserId] = useState(DEMO_USER_ID);
 
   const handleRemember = (formData: FormData) => {
     const content = String(formData.get("content") ?? "").trim();
@@ -103,7 +108,7 @@ export function PlaygroundForm({
             id="endUserId"
             value={endUserId}
             onChange={(e) => setEndUserId(e.target.value)}
-            placeholder="user_demo_1"
+            placeholder={DEMO_USER_ID}
             className="sm:max-w-xs"
           />
           <p className="text-xs text-muted-foreground">
@@ -177,6 +182,7 @@ export function PlaygroundForm({
               <Label htmlFor="query">Query</Label>
               <textarea
                 id="query"
+                ref={queryRef}
                 name="query"
                 placeholder="How should I communicate with this user?"
                 required
@@ -184,6 +190,24 @@ export function PlaygroundForm({
                 className="rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               />
             </div>
+            {endUserId === DEMO_USER_ID && (
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Try:</span>
+                {DEMO_QUERIES.map((example) => (
+                  <button
+                    key={example}
+                    type="button"
+                    onClick={() => {
+                      if (queryRef.current) queryRef.current.value = example;
+                      queryRef.current?.focus();
+                    }}
+                    className="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
+            )}
           </form>
         </CardContent>
       </Card>
@@ -194,6 +218,11 @@ export function PlaygroundForm({
             <EmptyState
               icon={FlaskConical}
               title="No memories matched this query for this user"
+              description={
+                endUserId === DEMO_USER_ID
+                  ? "This user should have a history. If nothing matches, the demo data may not have been seeded — run `pnpm seed:demo`."
+                  : `Nothing has been remembered for "${endUserId}" yet. Write something above, or switch to ${DEMO_USER_ID} to see a user with history.`
+              }
               className="py-16"
             />
           ) : (
