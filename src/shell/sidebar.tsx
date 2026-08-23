@@ -371,7 +371,16 @@ function SidebarNavSections({
 }) {
   const pathname = usePathname();
   const { primaryNav, settingsNav } = getNavSections(org, project);
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+
+  // Some hrefs are string-prefixes of others (e.g. `/org/settings` vs.
+  // `/org/settings/team`), so a naive per-item startsWith check would mark
+  // both active at once. Instead, find the single longest matching href
+  // across every nav item and highlight only that one.
+  const allHrefs = [...primaryNav, ...settingsNav].map((item) => item.href);
+  const bestMatch = allHrefs
+    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+    .sort((a, b) => b.length - a.length)[0];
+  const isActive = (href: string) => href === bestMatch;
 
   return (
     <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-3 pt-2 pb-5">

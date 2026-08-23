@@ -1,6 +1,12 @@
 import { KeyRound } from "lucide-react";
 import { notFound } from "next/navigation";
-import { getProjectInOrg, getEnvironmentsForProject, getApiKeysForEnvironment } from "@/lib/org";
+import {
+  getProjectInOrg,
+  getEnvironmentsForProject,
+  getApiKeysForEnvironment,
+  getApiKeyRequestCounts,
+} from "@/lib/org";
+import { billingPeriodStart } from "@/lib/plans";
 import { ApiKeysManager } from "@/features/api-keys/components/api-keys-manager";
 import { PageHeader } from "@/components/shared/page-header";
 
@@ -15,8 +21,18 @@ export default async function ApiKeysSettingsPage({
   if (!project) notFound();
 
   const environments = await getEnvironmentsForProject(project.id);
+  const requestCounts = await getApiKeyRequestCounts(
+    environments.map((e) => e.id),
+    billingPeriodStart()
+  );
   const withKeys = await Promise.all(
-    environments.map(async (env) => ({ ...env, keys: await getApiKeysForEnvironment(env.id) }))
+    environments.map(async (env) => ({
+      ...env,
+      keys: (await getApiKeysForEnvironment(env.id)).map((key) => ({
+        ...key,
+        requestsThisPeriod: requestCounts[key.id] ?? 0,
+      })),
+    }))
   );
 
   return (

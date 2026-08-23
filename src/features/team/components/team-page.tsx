@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Check, Copy, Mail, MoreHorizontal, UserPlus } from "lucide-react";
+import { Check, Copy, Mail, MoreHorizontal, Search, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/shared/page-header";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,6 +62,16 @@ function RoleBadge({ role }: { role: Role }) {
   );
 }
 
+function relativeTime(date: Date): string {
+  const days = Math.floor((Date.now() - date.getTime()) / 86_400_000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  return `${Math.floor(months / 12)}y ago`;
+}
+
 /**
  * Shown when an invitation was created but could not be emailed, which is the
  * normal case until an email provider is configured. The invitation is real and
@@ -105,9 +117,21 @@ export function TeamPage({
 }) {
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<ActionResult>({});
+  const [inviteRole, setInviteRole] = useState<Role>("member");
+  const [query, setQuery] = useState("");
+  const [pendingRemoval, setPendingRemoval] = useState<Member | null>(null);
+  const [pendingRevoke, setPendingRevoke] = useState<Invitation | null>(null);
 
   const canInvite = currentRole === "owner" || currentRole === "admin";
   const ownerCount = members.filter((m) => m.role === "owner").length;
+
+  const filteredMembers = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return members;
+    return members.filter(
+      (m) => m.email.toLowerCase().includes(q) || (m.name ?? "").toLowerCase().includes(q)
+    );
+  }, [members, query]);
 
   const run = (fn: () => Promise<ActionResult>) =>
     startTransition(async () => {
@@ -119,12 +143,11 @@ export function TeamPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">Team</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Who can reach this organization&apos;s projects, memories and API keys.
-        </p>
-      </div>
+      <PageHeader
+        icon={Users}
+        title="Team"
+        description="Who can reach this organization's projects, memories and API keys."
+      />
 
       {canInvite && (
         <form
@@ -141,7 +164,8 @@ export function TeamPage({
               <select
                 id="invite-role"
                 name="role"
-                defaultValue="member"
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value as Role)}
                 className="h-9 rounded-md border border-border bg-background px-3 text-sm"
               >
                 <option value="member">Member</option>
@@ -154,6 +178,7 @@ export function TeamPage({
               Send invite
             </Button>
           </div>
+          <p className="mt-2 text-xs text-muted-foreground">{ROLE_BLURB[inviteRole]}</p>
 
           {!emailConfigured && (
             <p className="mt-3 text-xs text-muted-foreground">
@@ -170,13 +195,24 @@ export function TeamPage({
       )}
 
       <div className="rounded-lg border border-border bg-card">
-        <div className="border-b border-border px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
           <h2 className="text-sm font-medium text-foreground">
             Members <span className="text-muted-foreground">({members.length})</span>
           </h2>
+          {members.length > 5 && (
+            <div className="relative">
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search members"
+                className="h-8 w-56 pl-8 text-xs"
+              />
+            </div>
+          )}
         </div>
         <ul className="divide-y divide-border">
-          {members.map((member) => {
+          {filteredMembers.map((member) => {
             const isSelf = member.userId === currentUserId;
             const isLastOwner = member.role === "owner" && ownerCount === 1;
             const mayManage =
@@ -190,9 +226,9 @@ export function TeamPage({
                     {member.name ?? member.email}
                     {isSelf && <span className="ml-2 text-xs text-muted-foreground">you</span>}
                   </p>
-                  {member.name && (
-                    <p className="truncate text-xs text-muted-foreground">{member.email}</p>
-                  )}
+                  <p className="truncate text-xs text-muted-foreground">
+                    {member.name && `${member.email} · `}Joined {relativeTime(member.joinedAt)}
+                  </p>
                 </div>
                 <RoleBadge role={member.role} />
                 {mayManage && (
@@ -217,7 +253,7 @@ export function TeamPage({
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         variant="destructive"
-                        onClick={() => run(() => removeMemberAction(orgId, member.membershipId))}
+                        onClick={() => setPendingRemoval(member)}
                       >
                         {isSelf ? "Leave organization" : "Remove from organization"}
                       </DropdownMenuItem>
@@ -227,6 +263,9 @@ export function TeamPage({
               </li>
             );
           })}
+          {filteredMembers.length === 0 && (
+            <li className="px-5 py-6 text-center text-sm text-muted-foreground">No members match &quot;{query}&quot;.</li>
+          )}
         </ul>
         <p className="border-t border-border px-5 py-3 text-xs text-muted-foreground">
           {ROLE_BLURB.owner} Admins manage the team; members use the product.
@@ -268,7 +307,7 @@ export function TeamPage({
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         variant="destructive"
-                        onClick={() => run(() => revokeInvitationAction(orgId, invitation.id))}
+                        onClick={() => setPendingRevoke(invitation)}
                       >
                         Revoke
                       </DropdownMenuItem>
@@ -280,6 +319,38 @@ export function TeamPage({
           </ul>
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingRemoval !== null}
+        onOpenChange={(open) => !open && setPendingRemoval(null)}
+        title={pendingRemoval?.userId === currentUserId ? "Leave organization?" : "Remove member?"}
+        description={
+          pendingRemoval?.userId === currentUserId
+            ? "You will immediately lose access to this organization's projects, memories and API keys."
+            : `${pendingRemoval?.name ?? pendingRemoval?.email} will immediately lose access to this organization.`
+        }
+        confirmLabel={pendingRemoval?.userId === currentUserId ? "Leave organization" : "Remove member"}
+        isPending={isPending}
+        onConfirm={() => {
+          if (!pendingRemoval) return;
+          run(() => removeMemberAction(orgId, pendingRemoval.membershipId));
+          setPendingRemoval(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={pendingRevoke !== null}
+        onOpenChange={(open) => !open && setPendingRevoke(null)}
+        title="Revoke invitation?"
+        description={`The invitation link sent to ${pendingRevoke?.email} will stop working. You can invite them again later.`}
+        confirmLabel="Revoke invitation"
+        isPending={isPending}
+        onConfirm={() => {
+          if (!pendingRevoke) return;
+          run(() => revokeInvitationAction(orgId, pendingRevoke.id));
+          setPendingRevoke(null);
+        }}
+      />
     </div>
   );
 }

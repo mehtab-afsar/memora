@@ -69,7 +69,7 @@ export type GuardOptions = {
   route?: string;
 };
 
-function error(status: number, message: string, extra: Record<string, unknown> = {}, headers?: HeadersInit) {
+export function error(status: number, message: string, extra: Record<string, unknown> = {}, headers?: HeadersInit) {
   return Response.json({ error: message, ...extra }, { status, headers });
 }
 

@@ -14,8 +14,9 @@ async function main() {
   requireEnv("DATABASE_URL", "ANTHROPIC_API_KEY", "VOYAGE_API_KEY");
 
   const { drainPendingJobs, pendingJobCount } = await import("@/lib/reconcile");
-  const { pruneIdempotencyKeys, pruneRateLimitWindows } = await import("@/lib/guards");
+  const { pruneIdempotencyKeys, pruneRateLimitWindows, pruneAgentInitAttempts } = await import("@/lib/guards");
   const { consolidateStale } = await import("@/lib/consolidate");
+  const { revokeUnclaimedAgentKeys } = await import("@/lib/org");
   const { db } = await import("@/db");
   const { environments, projects } = await import("@/db/schema");
   const { eq } = await import("drizzle-orm");
@@ -50,16 +51,25 @@ async function main() {
 
   // Rate-limit counters and idempotency records are write-heavy and short
   // lived. Nothing else would ever delete them, so an unswept table would grow
-  // forever and slowly make every request slower.
+  // forever and slowly make every request slower. Unclaimed agent-init keys
+  // are a different kind of leftover — not cleanup, but the thing that makes
+  // an expired claim token actually mean something instead of just looking
+  // like it does (see revokeUnclaimedAgentKeys in src/lib/org.ts).
   let lastSweep = 0;
   const SWEEP_INTERVAL_MS = 10 * 60_000;
   const sweep = async () => {
     if (Date.now() - lastSweep < SWEEP_INTERVAL_MS) return;
     lastSweep = Date.now();
-    const [windows, keys] = await Promise.all([pruneRateLimitWindows(), pruneIdempotencyKeys()]);
-    if (windows > 0 || keys > 0) {
-      console.log(`[sweep] pruned ${windows} rate-limit window(s), ${keys} idempotency key(s)`);
+    const [windows, keys, agentAttempts, revokedKeys] = await Promise.all([
+      pruneRateLimitWindows(),
+      pruneIdempotencyKeys(),
+      pruneAgentInitAttempts(),
+      revokeUnclaimedAgentKeys(),
+    ]);
+    if (windows > 0 || keys > 0 || agentAttempts > 0) {
+      console.log(`[sweep] pruned ${windows} rate-limit window(s), ${keys} idempotency key(s), ${agentAttempts} agent-init attempt window(s)`);
     }
+    if (revokedKeys > 0) console.log(`[sweep] revoked ${revokedKeys} unclaimed agent-init key(s)`);
   };
 
   if (!watch) {

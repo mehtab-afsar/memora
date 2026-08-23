@@ -211,6 +211,12 @@ Say this out loud before onboarding anyone:
   user is not recorded anywhere a customer can read.
 - **The legal pages are drafts** with bracketed placeholders for the things only
   a lawyer can fill in, and they say so on every page.
+- **`agent-init` is IP-rate-limited, not CAPTCHA'd.** Anyone can mint a
+  free-tier org and a working API key with no signup at all
+  (`POST /api/v1/agent-init` — this is deliberate, see `src/lib/org.ts`'s
+  `createAgentOrg`). The 5/hour/IP limit and the sweep that revokes an
+  unclaimed key after 7 days (`revokeUnclaimedAgentKeys`) raise the bar
+  against casual abuse; neither stops an attacker willing to rotate IPs.
 
 Backups are worth stating plainly rather than assuming: erasure removes rows
 from the live database, but whatever the host retains as point-in-time backups

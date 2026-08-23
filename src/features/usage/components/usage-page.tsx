@@ -1,7 +1,11 @@
+import Link from "next/link";
 import { Activity, Coins, Sparkles, Search, Zap } from "lucide-react";
-import { getUsageSummary } from "@/lib/usage";
+import { getUsageSummary, type UsageRangeDays, USAGE_RANGE_OPTIONS } from "@/lib/usage";
+import type { PlanLimits } from "@/lib/plans";
 import { StatTile } from "@/components/charts/stat-tile";
 import { GrowthChart } from "@/components/charts/growth-chart";
+import { PageHeader } from "@/components/shared/page-header";
+import { UsageBar } from "@/components/shared/usage-bar";
 import { formatRelativeTime } from "@/lib/format";
 
 type UsageSummary = Awaited<ReturnType<typeof getUsageSummary>>;
@@ -16,7 +20,38 @@ const OPERATION_LABELS: Record<string, string> = {
   query: "Embedding (query)",
 };
 
-export function UsagePage({ environmentName, summary }: { environmentName: string; summary: UsageSummary }) {
+function RangeSelector({ days }: { days: UsageRangeDays }) {
+  return (
+    <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+      {USAGE_RANGE_OPTIONS.map((option) => (
+        <Link
+          key={option}
+          href={`?range=${option}`}
+          scroll={false}
+          className={`rounded px-2 py-1 text-xs transition-colors ${
+            option === days
+              ? "bg-muted font-medium text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {option}d
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+export function UsagePage({
+  environmentName,
+  summary,
+  days,
+  quota,
+}: {
+  environmentName: string;
+  summary: UsageSummary;
+  days: UsageRangeDays;
+  quota: { limits: PlanLimits; writes: number; reads: number };
+}) {
   const anthropicCalls = summary.byOperation
     .filter((r) => r.provider === "anthropic")
     .reduce((sum, r) => sum + r.calls, 0);
@@ -26,12 +61,19 @@ export function UsagePage({ environmentName, summary }: { environmentName: strin
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Usage</h1>
-        <p className="text-sm text-muted-foreground">
-          Every Claude and Voyage call in {environmentName}, last 30 days — no plan, no limits, just what&apos;s
-          actually being consumed.
-        </p>
+      <PageHeader
+        icon={Activity}
+        title="Usage"
+        description={`Every Claude and Voyage call in ${environmentName}, last ${days} days — no plan, no limits, just what's actually being consumed.`}
+        actions={<RangeSelector days={days} />}
+      />
+
+      <div className="rounded-lg border border-border bg-card p-5">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">Against your plan this month</p>
+        <div className="mt-3 flex flex-col gap-4">
+          <UsageBar label="Writes" used={quota.writes} quota={quota.limits.monthlyWrites} />
+          <UsageBar label="Reads" used={quota.reads} quota={quota.limits.monthlyReads} />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -73,9 +115,39 @@ export function UsagePage({ environmentName, summary }: { environmentName: strin
       <div className="rounded-lg border border-border bg-card p-4">
         <div className="mb-3 flex items-baseline justify-between">
           <h2 className="text-sm font-medium text-foreground">Call volume</h2>
-          <span className="text-xs text-muted-foreground">Last 30 days</span>
+          <span className="text-xs text-muted-foreground">Last {days} days</span>
         </div>
         <GrowthChart data={summary.dailyVolume.map((d) => ({ day: d.day, count: d.calls }))} />
+      </div>
+
+      <div className="rounded-lg border border-border bg-card">
+        <div className="border-b border-border px-4 py-3">
+          <h2 className="text-sm font-medium text-foreground">By API key</h2>
+        </div>
+        {summary.byApiKey.length === 0 ? (
+          <p className="p-4 text-sm text-muted-foreground">No usage yet.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                <th className="px-4 py-2 font-medium">Key</th>
+                <th className="px-4 py-2 text-right font-medium">Calls</th>
+                <th className="px-4 py-2 text-right font-medium">Tokens</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {summary.byApiKey.map((row) => (
+                <tr key={row.apiKeyId ?? "unknown"}>
+                  <td className="px-4 py-2 text-foreground">{row.apiKeyName ?? "Deleted key"}</td>
+                  <td className="px-4 py-2 text-right font-mono tabular-nums text-foreground">{row.calls}</td>
+                  <td className="px-4 py-2 text-right font-mono tabular-nums text-muted-foreground">
+                    {Number(row.tokens ?? 0).toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <div className="rounded-lg border border-border bg-card">

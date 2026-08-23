@@ -190,6 +190,25 @@ async function main() {
       .where(and(eq(invitations.orgId, org.id), eq(invitations.status, "pending")))
       .limit(1);
     check("pending invitations exist before cleanup", Boolean(before));
+    // --- deleteOrganization: permission gate and cascade --------------------
+    const [deletableOrg] = await db.insert(organizations).values({ name: `deleteme-${stamp}` }).returning();
+    const [deletableOwner] = await db
+      .insert(memberships)
+      .values({ orgId: deletableOrg.id, userId: owner.id, role: "owner" })
+      .returning();
+    void deletableOwner;
+
+    await expectError(
+      "a member cannot delete the organization",
+      () => team.deleteOrganization({ orgId: deletableOrg.id, actorRole: "member" }),
+      "only an owner"
+    );
+    await team.deleteOrganization({ orgId: deletableOrg.id, actorRole: "owner" });
+    const [survivingMembership] = await db
+      .select({ id: memberships.id })
+      .from(memberships)
+      .where(eq(memberships.orgId, deletableOrg.id));
+    check("deleting the org cascades to its memberships", !survivingMembership);
   } finally {
     await db.delete(organizations).where(eq(organizations.id, org.id));
     const leftover = await db.select({ id: invitations.id }).from(invitations).where(eq(invitations.orgId, org.id));

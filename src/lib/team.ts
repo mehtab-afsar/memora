@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { invitations, memberships, organizations, users } from "@/db/schema";
+import { cancelSubscriptionForOrg } from "@/lib/billing";
 
 /**
  * Team membership: who is in an organization, and who may change that.
@@ -418,6 +419,33 @@ export async function leaveOrg(params: { orgId: string; userId: string }) {
     await assertNotLastOwner(params.orgId, membership.id, tx);
     await tx.delete(memberships).where(eq(memberships.id, membership.id));
   });
+}
+
+/**
+ * Permanently deletes an organization and everything under it. Every child
+ * table (memberships, invitations, projects, environments, api keys, usage
+ * and request logs) references `organizations.id` with `onDelete: cascade`,
+ * so the single delete below is enough — there is nothing to clean up by
+ * hand.
+ *
+ * The Stripe subscription is cancelled first and *outside* the transaction:
+ * Stripe is not transactional with Postgres, and an org that disappears while
+ * still being billed is a worse failure than a delete that doesn't happen. If
+ * cancellation fails, the organization is not deleted.
+ */
+export async function deleteOrganization(params: { orgId: string; actorRole: Role }): Promise<void> {
+  if (!can(params.actorRole, "deleteOrg")) {
+    throw new TeamError("Only an owner can delete this organization.");
+  }
+
+  try {
+    await cancelSubscriptionForOrg(params.orgId);
+  } catch (error) {
+    console.error("[team] failed to cancel subscription before org deletion", error);
+    throw new TeamError("Couldn't cancel the active subscription. Please try again or contact support.");
+  }
+
+  await db.delete(organizations).where(eq(organizations.id, params.orgId));
 }
 
 /** Other organizations this user belongs to — for the org switcher. */

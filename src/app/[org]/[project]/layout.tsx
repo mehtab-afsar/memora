@@ -1,9 +1,7 @@
 import { cookies } from "next/headers";
 import { assertProjectAccess } from "@/features/auth/lib/dashboard-auth";
 import { getProjectsForOrg, getEnvironmentsForProject } from "@/lib/org";
-import { DashboardSidebar, MobileSidebar } from "@/shell/sidebar";
-import { SidebarProvider } from "@/shell/sidebar-provider";
-import { DashboardTopbar } from "@/shell/topbar";
+import { DashboardShell } from "@/shell/dashboard-shell";
 
 export default async function ProjectLayout({
   children,
@@ -20,22 +18,20 @@ export default async function ProjectLayout({
     getEnvironmentsForProject(project.id),
     cookies(),
   ]);
-  const defaultCollapsed = cookieStore.get("sidebar-collapsed")?.value === "1";
+  // Collapsed by default — a pin toggle (Cmd/Ctrl+B) is what opts a user into
+  // the persisted, fully-expanded state, not the other way around.
+  const defaultCollapsed = cookieStore.get("sidebar-collapsed")?.value !== "0";
 
   return (
-    <SidebarProvider defaultCollapsed={defaultCollapsed}>
-      <div className="flex min-h-screen bg-background">
-        <DashboardSidebar org={org} project={project} projects={projects} user={user} />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <DashboardTopbar
-            environments={environments}
-            mobileNav={<MobileSidebar org={org} project={project} projects={projects} user={user} />}
-          />
-          <main className="flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-6xl px-6 py-8 md:px-10">{children}</div>
-          </main>
-        </div>
-      </div>
-    </SidebarProvider>
+    <DashboardShell
+      org={org}
+      project={project}
+      projects={projects}
+      user={user}
+      environments={environments}
+      defaultCollapsed={defaultCollapsed}
+    >
+      {children}
+    </DashboardShell>
   );
 }

@@ -1,0 +1,116 @@
+{
+  "name": "experience-golden",
+  "description": "Hand-built cases testing Experience Reuse Rate: does a recorded lesson resurface via recommendForTask() for a later, genuinely related task (expectReuse: true), and does it correctly stay out of an unrelated one (expectReuse: false, the false-reuse control)? Scenarios are dev-agent failure modes, the beachhead the roadmap discussion favored.",
+  "cases": [
+    {
+      "id": "node-version-reuse",
+      "prior": {
+        "task": "Install project dependencies",
+        "action": "Ran npm install with Node 16 installed locally",
+        "outcome": "failure",
+        "lesson": "This project requires Node 20+ — npm install fails on peer dependency resolution under Node 16 with a confusing ERESOLVE error instead of a clear version mismatch message."
+      },
+      "laterTask": "Set this project up on a freshly reinstalled machine",
+      "expectReuse": true
+    },
+    {
+      "id": "deploy-env-var-reuse",
+      "prior": {
+        "task": "Deploy the application to production",
+        "action": "Ran the deploy script without setting DATABASE_URL in the production environment",
+        "outcome": "failure",
+        "lesson": "The deploy script does not validate required environment variables before starting the app, so a missing DATABASE_URL surfaces as a generic connection timeout minutes into the deploy instead of failing fast at startup."
+      },
+      "laterTask": "Push the latest changes live to the production server",
+      "expectReuse": true
+    },
+    {
+      "id": "docker-build-arg-reuse",
+      "prior": {
+        "task": "Build the Docker image for release",
+        "action": "Ran docker build without passing the required BUILD_VERSION argument",
+        "outcome": "failure",
+        "lesson": "The Dockerfile has no default for BUILD_VERSION, so omitting --build-arg BUILD_VERSION=... fails the build at the version-stamping step with an unhelpful empty-string error."
+      },
+      "laterTask": "Build a new Docker image for the upcoming release",
+      "expectReuse": true
+    },
+    {
+      "id": "migration-lock-reuse",
+      "prior": {
+        "task": "Run the pending database migrations",
+        "action": "Ran the migration command while the app's connection pool still had open transactions",
+        "outcome": "failure",
+        "lesson": "Migrations against this database hang waiting for a table lock if the app's own connection pool has any open transactions — stop the app (or drain its pool) before migrating, not after starting the migration."
+      },
+      "laterTask": "Apply the new database migrations before this week's release",
+      "expectReuse": true
+    },
+    {
+      "id": "auth-token-expiry-reuse",
+      "prior": {
+        "task": "Debug why API requests started failing with 401 errors",
+        "action": "Checked the API client's stored credentials",
+        "outcome": "success",
+        "lesson": "The API client caches its auth token for 24 hours client-side but the server actually expires it after 12 — refreshing the token proactively at the 12-hour mark, not on first 401, avoids the failure window."
+      },
+      "laterTask": "Investigate intermittent 401 responses from the API in the automation pipeline",
+      "expectReuse": true
+    },
+    {
+      "id": "merge-conflict-reuse",
+      "prior": {
+        "task": "Merge the feature branch into main",
+        "action": "Resolved a merge conflict by taking the feature branch's version of the config file wholesale",
+        "outcome": "failure",
+        "lesson": "The config file has environment-specific values on both sides of a merge conflict — taking either side wholesale silently drops the other environment's settings; conflicts in this file need a manual field-by-field merge, not a pick-one resolution."
+      },
+      "laterTask": "Merge the latest release branch into main before the deploy",
+      "expectReuse": true
+    },
+    {
+      "id": "node-version-control",
+      "prior": {
+        "task": "Install project dependencies",
+        "action": "Ran npm install with Node 16 installed locally",
+        "outcome": "failure",
+        "lesson": "This project requires Node 20+ — npm install fails on peer dependency resolution under Node 16 with a confusing ERESOLVE error instead of a clear version mismatch message."
+      },
+      "laterTask": "Write unit tests for the checkout flow's discount calculation",
+      "expectReuse": false
+    },
+    {
+      "id": "docker-build-arg-control",
+      "prior": {
+        "task": "Build the Docker image for release",
+        "action": "Ran docker build without passing the required BUILD_VERSION argument",
+        "outcome": "failure",
+        "lesson": "The Dockerfile has no default for BUILD_VERSION, so omitting --build-arg BUILD_VERSION=... fails the build at the version-stamping step with an unhelpful empty-string error."
+      },
+      "laterTask": "Update the marketing copy on the pricing page",
+      "expectReuse": false
+    },
+    {
+      "id": "migration-lock-control",
+      "prior": {
+        "task": "Run the pending database migrations",
+        "action": "Ran the migration command while the app's connection pool still had open transactions",
+        "outcome": "failure",
+        "lesson": "Migrations against this database hang waiting for a table lock if the app's own connection pool has any open transactions — stop the app (or drain its pool) before migrating, not after starting the migration."
+      },
+      "laterTask": "Fix a CSS alignment bug in the mobile navbar",
+      "expectReuse": false
+    },
+    {
+      "id": "auth-token-expiry-control",
+      "prior": {
+        "task": "Debug why API requests started failing with 401 errors",
+        "action": "Checked the API client's stored credentials",
+        "outcome": "success",
+        "lesson": "The API client caches its auth token for 24 hours client-side but the server actually expires it after 12 — refreshing the token proactively at the 12-hour mark, not on first 401, avoids the failure window."
+      },
+      "laterTask": "Add a new column to the analytics dashboard showing weekly signups",
+      "expectReuse": false
+    }
+  ]
+}

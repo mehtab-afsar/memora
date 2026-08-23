@@ -1,6 +1,9 @@
 import { and, count, desc, eq, gte, sql, sum } from "drizzle-orm";
 import { db } from "@/db";
-import { usageEvents } from "@/db/schema";
+import { usageEvents, apiKeys } from "@/db/schema";
+
+export const USAGE_RANGE_OPTIONS = [7, 30, 90] as const;
+export type UsageRangeDays = (typeof USAGE_RANGE_OPTIONS)[number];
 
 /**
  * Total tokens for one event.
@@ -26,7 +29,7 @@ export async function getUsageSummary(projectId: string, environmentId: string, 
     gte(usageEvents.createdAt, sql`now() - (${days} * interval '1 day')`)
   );
 
-  const [totals, byOperation, dailyVolume, recentEvents] = await Promise.all([
+  const [totals, byOperation, byApiKey, dailyVolume, recentEvents] = await Promise.all([
     db
       .select({
         totalCalls: count(),
@@ -47,6 +50,18 @@ export async function getUsageSummary(projectId: string, environmentId: string, 
       .from(usageEvents)
       .where(scopeCondition)
       .groupBy(usageEvents.provider, usageEvents.operation)
+      .orderBy(desc(count())),
+    db
+      .select({
+        apiKeyId: usageEvents.apiKeyId,
+        apiKeyName: apiKeys.name,
+        calls: count(),
+        tokens: sum(eventTokens),
+      })
+      .from(usageEvents)
+      .leftJoin(apiKeys, eq(usageEvents.apiKeyId, apiKeys.id))
+      .where(scopeCondition)
+      .groupBy(usageEvents.apiKeyId, apiKeys.name)
       .orderBy(desc(count())),
     db
       .select({
@@ -84,6 +99,7 @@ export async function getUsageSummary(projectId: string, environmentId: string, 
       hitRate: promptTokens === 0 ? 0 : cacheRead / promptTokens,
     },
     byOperation,
+    byApiKey,
     dailyVolume,
     recentEvents,
   };

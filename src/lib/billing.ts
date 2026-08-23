@@ -137,6 +137,55 @@ export async function createPortalSession(orgId: string, returnUrl: string): Pro
   return session.url;
 }
 
+export type Invoice = {
+  id: string;
+  number: string | null;
+  createdAt: Date;
+  amountPaid: number;
+  currency: string;
+  status: Stripe.Invoice.Status | null;
+  hostedInvoiceUrl: string | null;
+};
+
+/**
+ * Read-only — a convenience list so a customer does not have to leave the app
+ * to see what they were last charged. The portal (above) remains the place to
+ * actually manage a payment method or dispute a charge; this never writes
+ * anything.
+ */
+export async function listRecentInvoices(stripeCustomerId: string, limit = 5): Promise<Invoice[]> {
+  const client = requireStripe();
+  const invoices = await client.invoices.list({ customer: stripeCustomerId, limit });
+
+  return invoices.data.map((invoice) => ({
+    id: invoice.id ?? "",
+    number: invoice.number,
+    createdAt: new Date(invoice.created * 1000),
+    amountPaid: invoice.amount_paid,
+    currency: invoice.currency,
+    status: invoice.status,
+    hostedInvoiceUrl: invoice.hosted_invoice_url ?? null,
+  }));
+}
+
+/**
+ * Best-effort cancellation used before an organization is deleted. Callers
+ * must treat a thrown error as "do not proceed with deletion" — an org
+ * disappearing while Stripe keeps billing it is the failure mode this exists
+ * to prevent.
+ */
+export async function cancelSubscriptionForOrg(orgId: string): Promise<void> {
+  // Billing being unconfigured means nothing was ever purchased through
+  // Stripe, so there is nothing to cancel — degrade gracefully rather than
+  // throwing, same as the rest of this module without Stripe configured.
+  if (!stripe) return;
+
+  const [org] = await db.select().from(organizations).where(eq(organizations.id, orgId)).limit(1);
+  if (!org?.stripeSubscriptionId) return;
+
+  await stripe.subscriptions.cancel(org.stripeSubscriptionId);
+}
+
 // ---------------------------------------------------------------------------
 // Webhook
 // ---------------------------------------------------------------------------

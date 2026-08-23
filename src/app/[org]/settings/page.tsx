@@ -1,22 +1,22 @@
-import { notFound } from "next/navigation";
-import { requireUser } from "@/features/auth/lib/session";
-import { getMembershipForUser, getFirstProjectForOrg } from "@/lib/org";
+import { assertOrgAccess } from "@/features/auth/lib/dashboard-auth";
+import { listMembers } from "@/lib/team";
+import { limitsFor } from "@/lib/plans";
 import { OrganizationSettingsPage } from "@/features/organization/components/organization-settings-page";
 
 export default async function OrgSettingsPage({ params }: { params: Promise<{ org: string }> }) {
   const { org: orgId } = await params;
-  const user = await requireUser();
+  const { org, role } = await assertOrgAccess(orgId);
 
-  const membership = await getMembershipForUser(user.id, orgId);
-  if (!membership) notFound();
-
-  const project = await getFirstProjectForOrg(orgId);
+  const members = await listMembers(orgId);
 
   return (
     <OrganizationSettingsPage
       orgId={orgId}
-      orgName={membership.org.name}
-      dashboardHref={project ? `/${orgId}/${project.id}/overview` : null}
+      orgName={org.name}
+      createdAt={org.createdAt}
+      memberCount={members.length}
+      planLabel={limitsFor(org.plan).label}
+      currentRole={role}
     />
   );
 }

@@ -17,16 +17,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { createApiKeyAction, revokeApiKeyAction } from "@/features/api-keys/actions/api-keys-actions";
 import { formatRelativeTime } from "@/lib/format";
+import type { ApiKeyScope } from "@/lib/org";
 
 type ApiKey = {
   id: string;
   name: string;
   keyPrefix: string;
+  scopes: ApiKeyScope[];
   createdAt: Date;
   lastUsedAt: Date | null;
   revokedAt: Date | null;
+  requestsThisPeriod: number;
 };
 
 type EnvironmentWithKeys = { id: string; name: string; keys: ApiKey[] };
@@ -62,12 +66,14 @@ function EnvironmentKeysCard({
   const [createOpen, setCreateOpen] = useState(false);
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [pendingRevoke, setPendingRevoke] = useState<ApiKey | null>(null);
 
   const handleCreate = (formData: FormData) => {
     const name = String(formData.get("name") ?? "").trim();
+    const scopes = formData.getAll("scopes") as ApiKeyScope[];
     startTransition(async () => {
       try {
-        const fullKey = await createApiKeyAction(orgId, projectId, environment.id, name);
+        const fullKey = await createApiKeyAction(orgId, projectId, environment.id, name, scopes);
         setRevealedKey(fullKey);
         setCopied(false);
       } catch {
@@ -83,6 +89,8 @@ function EnvironmentKeysCard({
         toast.success("Key revoked");
       } catch {
         toast.error("Failed to revoke key");
+      } finally {
+        setPendingRevoke(null);
       }
     });
   };
@@ -133,9 +141,24 @@ function EnvironmentKeysCard({
                   <DialogTitle>New API key</DialogTitle>
                   <DialogDescription>Scoped to the {environment.name} environment.</DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                  <Label htmlFor="key-name">Name</Label>
-                  <Input id="key-name" name="name" placeholder="e.g. Production backend" className="mt-1.5" />
+                <div className="flex flex-col gap-4 py-4">
+                  <div>
+                    <Label htmlFor="key-name">Name</Label>
+                    <Input id="key-name" name="name" placeholder="e.g. Production backend" className="mt-1.5" />
+                  </div>
+                  <div>
+                    <Label>Permissions</Label>
+                    <div className="mt-1.5 flex flex-col gap-1.5">
+                      <label className="flex items-center gap-2 text-sm text-foreground">
+                        <input type="checkbox" name="scopes" value="read" defaultChecked className="size-3.5" />
+                        Read — recall and list memories
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-foreground">
+                        <input type="checkbox" name="scopes" value="write" defaultChecked className="size-3.5" />
+                        Write — remember and record experiences
+                      </label>
+                    </div>
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button type="submit" disabled={isPending}>
@@ -155,13 +178,21 @@ function EnvironmentKeysCard({
         ) : (
           <ul className="divide-y divide-border">
             {environment.keys.map((key) => (
-              <li key={key.id} className="flex items-center justify-between px-4 py-3">
+              <li key={key.id} className="flex items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium text-foreground">{key.name}</span>
                     <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
                       {key.keyPrefix}…
                     </code>
+                    {key.scopes.map((scope) => (
+                      <span
+                        key={scope}
+                        className="rounded-full border border-border bg-transparent px-2 py-0.5 text-xs capitalize text-muted-foreground"
+                      >
+                        {scope}
+                      </span>
+                    ))}
                     {key.revokedAt && (
                       <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                         Revoked
@@ -169,16 +200,17 @@ function EnvironmentKeysCard({
                     )}
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Created {formatRelativeTime(key.createdAt)}
-                    {key.lastUsedAt && <> · Last used {formatRelativeTime(key.lastUsedAt)}</>}
+                    {key.lastUsedAt ? `Last used ${formatRelativeTime(key.lastUsedAt)}` : "Never used"}
+                    {" · "}
+                    {key.requestsThisPeriod.toLocaleString()} requests this period
                   </p>
                 </div>
                 {!key.revokedAt && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="gap-1.5 text-muted-foreground hover:text-destructive"
-                    onClick={() => handleRevoke(key.id)}
+                    className="shrink-0 gap-1.5 text-muted-foreground hover:text-destructive"
+                    onClick={() => setPendingRevoke(key)}
                     disabled={isPending}
                   >
                     <Ban className="size-3.5" />
@@ -190,6 +222,16 @@ function EnvironmentKeysCard({
           </ul>
         )}
       </CardContent>
+
+      <ConfirmDialog
+        open={pendingRevoke !== null}
+        onOpenChange={(open) => !open && setPendingRevoke(null)}
+        title="Revoke API key?"
+        description={`Any request using "${pendingRevoke?.name}" will start failing immediately. This cannot be undone.`}
+        confirmLabel="Revoke key"
+        isPending={isPending}
+        onConfirm={() => pendingRevoke && handleRevoke(pendingRevoke.id)}
+      />
     </Card>
   );
 }

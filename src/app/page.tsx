@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { currentUser } from "@/features/auth/lib/session";
 import { getCurrentOrgForUser, getFirstProjectForOrg } from "@/lib/org";
-import { LandingPage } from "@/features/landing/components/landing-page";
+import { HomePage } from "@/features/landing/components/home-page";
 
 export const metadata: Metadata = {
   title: "MEMORA — The trust layer for AI memory",
@@ -17,7 +17,7 @@ export default async function Home() {
   // unreachable for anyone who had ever logged in.
   const user = await currentUser();
   if (!user) {
-    return <LandingPage />;
+    return <HomePage />;
   }
 
   const org = await getCurrentOrgForUser(user.id);

@@ -2,20 +2,26 @@
 
 import { revalidatePath } from "next/cache";
 import { assertProjectAccess } from "@/features/auth/lib/dashboard-auth";
-import { getEnvironmentInProject, createApiKey, revokeApiKey } from "@/lib/org";
+import { getEnvironmentInProject, createApiKey, revokeApiKey, type ApiKeyScope } from "@/lib/org";
 
 export async function createApiKeyAction(
   orgId: string,
   projectId: string,
   environmentId: string,
-  name: string
+  name: string,
+  scopes: ApiKeyScope[]
 ): Promise<string> {
   const { project } = await assertProjectAccess(orgId, projectId);
 
   const environment = await getEnvironmentInProject(project.id, environmentId);
   if (!environment) throw new Error("Environment not found");
 
-  const { fullKey } = await createApiKey(environment.id, name || "Untitled key", environment.name);
+  const { fullKey } = await createApiKey(
+    environment.id,
+    name || "Untitled key",
+    environment.name,
+    scopes.length > 0 ? scopes : ["read", "write"]
+  );
   revalidatePath(`/${orgId}/${projectId}/settings/api-keys`);
   return fullKey;
 }

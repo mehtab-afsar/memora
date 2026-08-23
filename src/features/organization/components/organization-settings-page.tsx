@@ -1,42 +1,66 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { Building2, CreditCard, Users } from "lucide-react";
+import { PageHeader } from "@/components/shared/page-header";
 import { OrgSettingsForm } from "@/features/organization/components/org-settings-form";
-import { BrandMark } from "@/components/brand-mark";
+import { DangerZone } from "@/features/organization/components/danger-zone";
+import type { Role } from "@/lib/team";
 
 export function OrganizationSettingsPage({
   orgId,
   orgName,
-  dashboardHref,
+  createdAt,
+  memberCount,
+  planLabel,
+  currentRole,
 }: {
   orgId: string;
   orgName: string;
-  dashboardHref: string | null;
+  createdAt: Date;
+  memberCount: number;
+  planLabel: string;
+  currentRole: Role;
 }) {
   return (
-    <div className="min-h-screen bg-background">
-      <header className="flex h-16 items-center gap-4 border-b border-border px-6">
-        <div className="flex items-center gap-2">
-          <BrandMark className="size-5 text-primary" />
-          <span className="text-sm font-semibold tracking-tight text-foreground">MEMORA</span>
-        </div>
-        {dashboardHref && (
-          <Link
-            href={dashboardHref}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="size-3.5" />
-            Back to dashboard
-          </Link>
-        )}
-      </header>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        icon={Building2}
+        title="Organization"
+        description={`Created ${createdAt.toLocaleDateString()}`}
+      />
 
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-6 py-10">
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">Organization settings</h1>
-          <p className="text-sm text-muted-foreground">Single-owner workspace — team invites aren&apos;t available yet.</p>
-        </div>
-        <OrgSettingsForm orgId={orgId} name={orgName} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Link
+          href={`/${orgId}/settings/team`}
+          className="flex items-center gap-3 rounded-lg border border-border bg-card p-5 transition-colors hover:bg-muted/40"
+        >
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <Users className="size-4" />
+          </span>
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              {memberCount} {memberCount === 1 ? "member" : "members"}
+            </p>
+            <p className="text-xs text-muted-foreground">Manage the team →</p>
+          </div>
+        </Link>
+
+        <Link
+          href={`/${orgId}/settings/billing`}
+          className="flex items-center gap-3 rounded-lg border border-border bg-card p-5 transition-colors hover:bg-muted/40"
+        >
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <CreditCard className="size-4" />
+          </span>
+          <div>
+            <p className="text-sm font-medium text-foreground">{planLabel} plan</p>
+            <p className="text-xs text-muted-foreground">Manage billing →</p>
+          </div>
+        </Link>
       </div>
+
+      <OrgSettingsForm orgId={orgId} name={orgName} />
+
+      {currentRole === "owner" && <DangerZone orgId={orgId} orgName={orgName} />}
     </div>
   );
 }

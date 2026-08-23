@@ -235,6 +235,20 @@ async function main() {
       .where(and(eq(usageEvents.projectId, project.id), gte(usageEvents.createdAt, startedAt)));
 
     const pipelineCost = costOf(usageRows, pipelineModel);
+
+    // Per-operation dollar breakdown — `calls.byOperation` below already
+    // counts calls per operation; this is the same grouping, priced. Lets a
+    // change to one prompt/step be argued from its own cost line instead of
+    // only the pipeline total moving.
+    const rowsByOperation = usageRows.reduce<Record<string, typeof usageRows>>((acc, r) => {
+      const key = `${r.provider}:${r.operation}`;
+      (acc[key] ??= []).push(r);
+      return acc;
+    }, {});
+    const costByOperation = Object.fromEntries(
+      Object.entries(rowsByOperation).map(([key, rows]) => [key, costOf(rows, pipelineModel)])
+    );
+
     const judge = judgeUsage();
     const judgeRate = ANTHROPIC_RATES[args.judgeModel] ?? ANTHROPIC_RATES["claude-opus-5"];
     const judgeUsd =
@@ -289,6 +303,7 @@ async function main() {
       cost: {
         pipeline: pipelineCost,
         pipelineUsdPer1kMemories: totalMemories > 0 ? (pipelineCost.totalUsd / totalMemories) * 1000 : 0,
+        byOperation: costByOperation,
         judgeUsd,
         judgeTokens: judge,
       },
@@ -334,6 +349,9 @@ async function main() {
       console.log(
         `             (${pipelineCost.voyageTokens} embedding tokens unpriced — set VOYAGE_RATE_PER_MTOK to include them)`
       );
+    }
+    for (const [key, breakdown] of Object.entries(report.cost.byOperation).sort()) {
+      console.log(`             $${breakdown.totalUsd.toFixed(4)}  ${key}`);
     }
 
     if (ungraded.length > 0) {

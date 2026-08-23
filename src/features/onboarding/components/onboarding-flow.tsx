@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { BrandMark } from "@/components/brand-mark";
 
 const STEP_COUNT = 3;
@@ -61,6 +62,8 @@ export function OnboardingFlow({
           )}
           {step === 3 && (
             <QuickStartStep
+              apiKey={apiKey}
+              environmentName={environmentName}
               playgroundHref={playgroundHref}
               onBack={() => setStep(2)}
               onFinish={() => router.push(dashboardHref)}
@@ -219,26 +222,69 @@ function ApiKeyStep({
 }
 
 function QuickStartStep({
+  apiKey,
+  environmentName,
   playgroundHref,
   onBack,
   onFinish,
 }: {
+  apiKey: string;
+  environmentName: string;
   playgroundHref: string;
   onBack: () => void;
   onFinish: () => void;
 }) {
+  const sdkSnippet = `import { Memora } from "@memora/client";
+
+const memora = new Memora({ apiKey: "${apiKey}" });
+
+await memora.remember({ userId: "alice", content: "prefers concise answers" });
+
+const { results } = await memora.recall({ userId: "alice", query: "how should I respond?" });
+// -> ranked memories, each with a reason`;
+
+  const mcpSnippet = `{
+  "mcpServers": {
+    "memora": {
+      "command": "npx",
+      "args": ["-y", "@memora/mcp"],
+      "env": {
+        "MEMORA_API_KEY": "${apiKey}",
+        "MEMORA_USER_ID": "you@example.com"
+      }
+    }
+  }
+}`;
+
   return (
     <>
-      <StepHeading icon={Terminal} title="You're ready" description="Two calls cover most of what you'll do." />
+      <StepHeading
+        icon={Terminal}
+        title="You're ready"
+        description={`Real code for your ${environmentName} environment — the key is already dropped in.`}
+      />
 
-      <div className="overflow-hidden rounded-lg border border-border">
-        <pre className="overflow-x-auto bg-muted px-4 py-3 font-mono text-xs leading-relaxed text-foreground">
-          <code>{`memory.remember(user_id="alice", content="prefers concise answers")
-
-memory.recall(user_id="alice", query="how should I respond?")
-# -> ranked memories, each with a reason`}</code>
-        </pre>
-      </div>
+      <Tabs defaultValue="sdk">
+        <TabsList>
+          <TabsTrigger value="sdk">SDK</TabsTrigger>
+          <TabsTrigger value="mcp">MCP</TabsTrigger>
+        </TabsList>
+        <TabsContent value="sdk">
+          <div className="overflow-hidden rounded-lg border border-border">
+            <pre className="overflow-x-auto bg-muted px-4 py-3 font-mono text-xs leading-relaxed text-foreground">
+              <code>{sdkSnippet}</code>
+            </pre>
+          </div>
+        </TabsContent>
+        <TabsContent value="mcp">
+          <div className="overflow-hidden rounded-lg border border-border">
+            <pre className="overflow-x-auto bg-muted px-4 py-3 font-mono text-xs leading-relaxed text-foreground">
+              <code>{mcpSnippet}</code>
+            </pre>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">For Claude Code, Cursor, or any MCP client.</p>
+        </TabsContent>
+      </Tabs>
 
       <div className="flex gap-2">
         <Button variant="ghost" onClick={onBack} className="gap-1.5">
@@ -250,12 +296,7 @@ memory.recall(user_id="alice", query="how should I respond?")
         </Button>
       </div>
 
-      <Button
-        variant="link"
-        nativeButton={false}
-        render={<a href={playgroundHref} />}
-        className="mx-auto text-muted-foreground"
-      >
+      <Button variant="outline" nativeButton={false} render={<a href={playgroundHref} />}>
         Or try the Playground first
       </Button>
     </>

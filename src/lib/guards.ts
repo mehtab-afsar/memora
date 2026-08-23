@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { and, count, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { apiRequests, idempotencyKeys, rateLimitWindows } from "@/db/schema";
+import { agentInitAttempts, apiRequests, idempotencyKeys, rateLimitWindows } from "@/db/schema";
 import {
   billingPeriodStart,
   isOverQuota,
@@ -84,6 +84,74 @@ export async function pruneRateLimitWindows(now = new Date()): Promise<number> {
     apiKeyId: rateLimitWindows.apiKeyId,
   });
   return deleted.length;
+}
+
+// -- agent-init rate limiting --------------------------------------------------
+
+/**
+ * `POST /api/v1/agent-init` mints an org and a working API key with no
+ * authentication at all, so it can't be rate-limited by `apiKeyId` like every
+ * other route — there isn't one yet. Keyed by caller IP instead, on its own
+ * hourly window: this is a mint-a-resource endpoint, not a request-volume one,
+ * so it gets a much stricter, much longer window than ordinary API traffic.
+ *
+ * This bounds the *rate* of minting, not the total outstanding liability of
+ * unclaimed keys — pair with `revokeUnclaimedAgentKeys` in src/lib/org.ts.
+ * It also isn't a hard defense: an attacker who rotates IPs isn't slowed by
+ * it. Treat it as raising the bar against casual abuse, not eliminating it —
+ * there is no CAPTCHA or similar behind this endpoint.
+ */
+const AGENT_INIT_WINDOW_MS = 60 * 60_000;
+export const AGENT_INIT_LIMIT_PER_HOUR = 5;
+
+export async function consumeAgentInitRateLimit(ipHash: string, now = new Date()): Promise<RateLimitResult> {
+  const windowStart = rateLimitWindowStart(now, AGENT_INIT_WINDOW_MS);
+
+  const [row] = await db
+    .insert(agentInitAttempts)
+    .values({ ipHash, windowStart, count: 1 })
+    .onConflictDoUpdate({
+      target: [agentInitAttempts.ipHash, agentInitAttempts.windowStart],
+      set: { count: sql`${agentInitAttempts.count} + 1` },
+    })
+    .returning({ count: agentInitAttempts.count });
+
+  const used = row?.count ?? 1;
+  return {
+    allowed: used <= AGENT_INIT_LIMIT_PER_HOUR,
+    limit: AGENT_INIT_LIMIT_PER_HOUR,
+    remaining: Math.max(0, AGENT_INIT_LIMIT_PER_HOUR - used),
+    retryAfterSeconds: secondsUntilWindowReset(now, AGENT_INIT_WINDOW_MS),
+  };
+}
+
+/** Same "nothing else deletes these" reasoning as `pruneRateLimitWindows`. */
+export async function pruneAgentInitAttempts(now = new Date()): Promise<number> {
+  const cutoff = new Date(rateLimitWindowStart(now, AGENT_INIT_WINDOW_MS).getTime() - AGENT_INIT_WINDOW_MS);
+  const deleted = await db
+    .delete(agentInitAttempts)
+    .where(sql`${agentInitAttempts.windowStart} < ${cutoff}`)
+    .returning({ ipHash: agentInitAttempts.ipHash });
+  return deleted.length;
+}
+
+/**
+ * The last entry of `X-Forwarded-For`, not the first. A proxy that appends
+ * (rather than overwrites) the header produces
+ * `client-claimed-ip, proxy-observed-ip` — the first entry is exactly what a
+ * client's own request sets (`curl -H "X-Forwarded-For: 1.2.3.4"` spoofs it
+ * trivially), the last is what the proxy actually saw the connection from.
+ */
+export function getClientIp(request: Request): string {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (!forwardedFor) return "unknown";
+  const parts = forwardedFor.split(",").map((p) => p.trim());
+  return parts[parts.length - 1] || "unknown";
+}
+
+/** Never persist a raw IP — hashed the same way an API key or invitation token is. */
+export function hashIp(ip: string): string {
+  return createHash("sha256").update(ip).digest("hex");
 }
 
 // -- monthly quota -----------------------------------------------------------
