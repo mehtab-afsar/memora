@@ -22,6 +22,7 @@
     "smoke:erasure": "tsx scripts/smoke-erasure.ts",
     "smoke:team": "tsx scripts/smoke-team.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",
+    "prune:test-data": "tsx scripts/prune-test-data.ts",
     "smoke:environments": "tsx scripts/smoke-environments.ts",
     "cache:probe": "tsx scripts/cache-probe.ts"
   },
