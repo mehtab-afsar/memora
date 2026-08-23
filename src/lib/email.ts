@@ -87,3 +87,22 @@ function escapeHtml(value: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
+
+export function passwordResetEmail(params: { link: string; minutes: number }): Omit<Email, "to"> {
+  const body =
+    `Someone asked to reset the password on your Memora account.\n\n` +
+    `${params.link}\n\n` +
+    `The link works once and expires in ${params.minutes} minutes. If this wasn't you, ` +
+    `ignore this email — your password has not changed and nothing has happened to your account.`;
+
+  return {
+    subject: "Reset your Memora password",
+    text: body,
+    html:
+      `<p>Someone asked to reset the password on your Memora account.</p>` +
+      `<p><a href="${escapeHtml(params.link)}">Choose a new password</a></p>` +
+      `<p style="color:#666;font-size:13px">The link works once and expires in ${params.minutes} minutes. ` +
+      `If this wasn't you, ignore this email — your password has not changed and nothing has happened ` +
+      `to your account.</p>`,
+  };
+}

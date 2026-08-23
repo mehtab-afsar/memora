@@ -118,6 +118,27 @@ export const apiKeys = pgTable("api_keys", {
 ]);
 
 // ---------------------------------------------------------------------------
+// Password resets.
+//
+// Same shape as invitations, and for the same reason: the token is hashed at
+// rest so a database dump does not hand over a working reset for every account.
+// Single-use and short-lived, because a reset link is a bearer credential for
+// somebody's whole account.
+// ---------------------------------------------------------------------------
+
+export const passwordResets = pgTable("password_resets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("password_resets_token_hash_idx").on(table.tokenHash),
+  index("password_resets_user_idx").on(table.userId, table.createdAt),
+]);
+
+// ---------------------------------------------------------------------------
 // Invitations.
 //
 // A separate table rather than a pending row in `memberships`, because a
@@ -160,6 +181,26 @@ export const invitations = pgTable("invitations", {
   // partial unique index so that re-inviting someone whose invitation was
   // revoked or expired is an ordinary, allowed thing.
   index("invitations_org_email_idx").on(table.orgId, table.email),
+]);
+
+/**
+ * Agent-first signup: `createAgentOrg` provisions an org with no members, and
+ * this token is how a human later claims ownership of it. Unlike an
+ * `invitations` row it isn't bound to an email — whoever holds the token
+ * becomes the org's owner — and it is never resent, since nothing sent it in
+ * the first place.
+ */
+export const orgClaimTokens = pgTable("org_claim_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  claimedAt: timestamp("claimed_at", { withTimezone: true }),
+  claimedByUserId: uuid("claimed_by_user_id").references(() => users.id, { onDelete: "set null" }),
+}, (table) => [
+  uniqueIndex("org_claim_tokens_token_hash_idx").on(table.tokenHash),
+  uniqueIndex("org_claim_tokens_org_id_idx").on(table.orgId),
 ]);
 
 // ---------------------------------------------------------------------------
@@ -391,6 +432,19 @@ export const rateLimitWindows = pgTable("rate_limit_windows", {
   count: integer("count").notNull().default(0),
 }, (table) => [
   uniqueIndex("rate_limit_windows_key_window_idx").on(table.apiKeyId, table.windowStart),
+]);
+
+/**
+ * Same fixed-window shape as `rateLimitWindows`, but keyed by a hashed
+ * caller IP instead of an API key — `agent-init` mints keys, so there is no
+ * `apiKeyId` yet at the point this table is consulted.
+ */
+export const agentInitAttempts = pgTable("agent_init_attempts", {
+  ipHash: text("ip_hash").notNull(),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+  count: integer("count").notNull().default(0),
+}, (table) => [
+  uniqueIndex("agent_init_attempts_ip_window_idx").on(table.ipHash, table.windowStart),
 ]);
 
 /**
