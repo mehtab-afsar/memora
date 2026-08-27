@@ -83,8 +83,8 @@ async function main() {
     check("two simultaneous submissions produce exactly one change", succeeded === 1, `${succeeded}`);
 
     const [after] = await db.select().from(users).where(eq(users.id, user.id));
-    check("the new password works", verifyPassword("a-brand-new-password", after.passwordHash));
-    check("the old password does not", !verifyPassword("original-password", after.passwordHash));
+    check("the new password works", verifyPassword("a-brand-new-password", after.passwordHash!));
+    check("the old password does not", !verifyPassword("original-password", after.passwordHash!));
 
     await expectError(
       "a spent token cannot be reused",

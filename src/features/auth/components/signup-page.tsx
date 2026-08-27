@@ -4,7 +4,9 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { User, Mail, Lock } from "lucide-react";
 import { signupAction, type SignupState } from "@/features/auth/actions/signup";
+import { googleSignInAction } from "@/features/auth/actions/login";
 import { BrandMark } from "@/components/brand-mark";
+import { GoogleIcon } from "@/components/google-icon";
 import { lpSans, lpMono, LP_VARS, Eyebrow } from "@/features/landing/lib/lp-theme";
 
 const initialState: SignupState = {};
@@ -44,6 +46,22 @@ export function SignupPage() {
         </div>
 
         <div className="rounded-lg border-2 border-[var(--lp-border)] bg-[var(--lp-bg)] p-8">
+          <form action={googleSignInAction}>
+            <button
+              type="submit"
+              className="inline-flex w-full items-center justify-center gap-2.5 rounded-md border-2 border-[var(--lp-border)] bg-[var(--lp-bg)] px-6 py-3 text-base font-semibold text-[var(--lp-text)] transition-colors hover:bg-[var(--lp-border)]/20"
+            >
+              <GoogleIcon />
+              Continue with Google
+            </button>
+          </form>
+
+          <div className="my-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-[var(--lp-border)]" />
+            <span className="text-xs font-semibold text-[var(--lp-text-tertiary)]">OR</span>
+            <div className="h-px flex-1 bg-[var(--lp-border)]" />
+          </div>
+
           <form action={formAction} className="flex flex-col gap-5">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="name" className={FIELD_LABEL_CLASS}>

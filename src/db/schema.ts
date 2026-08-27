@@ -44,7 +44,10 @@ export const organizations = pgTable("organizations", {
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull(),
-  passwordHash: text("password_hash").notNull(),
+  // Nullable: Google-only accounts (created from the Auth.js `signIn`
+  // callback) have no password. The Credentials provider's authorize()
+  // rejects a login attempt when this is null.
+  passwordHash: text("password_hash"),
   name: text("name"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

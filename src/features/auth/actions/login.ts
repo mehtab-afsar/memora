@@ -5,6 +5,10 @@ import { signIn } from "@/features/auth/lib/auth";
 
 export type LoginState = { error?: string };
 
+export async function googleSignInAction(): Promise<void> {
+  await signIn("google", { redirectTo: "/" });
+}
+
 export async function loginAction(_prevState: LoginState, formData: FormData): Promise<LoginState> {
   const email = formData.get("email");
   const password = formData.get("password");
