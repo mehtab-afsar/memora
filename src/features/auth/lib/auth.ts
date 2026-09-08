@@ -9,6 +9,17 @@ import { verifyPassword } from "@/lib/password";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
+  logger: {
+    error(error) {
+      // A JWT that fails to decode — signed under an old AUTH_SECRET, or from
+      // before a database switch — is not a bug here. `currentUser()` already
+      // treats a session `auth()` can't produce the same as signed out, so
+      // logging this by default just prints a scary stack trace for a case
+      // the app was specifically built to handle gracefully.
+      if (error.name === "JWTSessionError") return;
+      console.error(error);
+    },
+  },
   providers: [
     Credentials({
       credentials: {

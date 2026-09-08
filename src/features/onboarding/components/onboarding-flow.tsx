@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Database,
@@ -13,9 +14,9 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { BrandMark } from "@/components/brand-mark";
+import { hanken, dmMono, HOME_VARS } from "@/features/landing/lib/home-tokens";
+import { PrimaryButton, GhostButton } from "@/features/landing/components/home/buttons";
 
 const STEP_COUNT = 3;
 
@@ -39,11 +40,14 @@ export function OnboardingFlow({
   const playgroundHref = `/${orgId}/${projectId}/playground`;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div
+      className={`${hanken.variable} ${dmMono.variable} flex min-h-screen flex-col bg-white text-[var(--ink)]`}
+      style={{ ...HOME_VARS, fontFamily: "var(--font-home-sans)" }}
+    >
       <header className="flex h-16 items-center justify-center px-6">
         <div className="flex items-center gap-2">
-          <BrandMark className="size-6 text-primary" />
-          <span className="text-base font-light tracking-wider text-foreground">Memora</span>
+          <BrandMark className="size-6 text-[var(--indigo)]" />
+          <span className="text-[17px] font-semibold tracking-[0.08em] text-[var(--ink)]">MEMORA</span>
         </div>
       </header>
 
@@ -84,12 +88,12 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
             key={n}
             className={cn(
               "h-1 rounded-full transition-all duration-300",
-              n === current ? "w-6 bg-primary" : "w-1.5 bg-muted"
+              n === current ? "w-6 bg-[var(--indigo)]" : "w-1.5 bg-[var(--line)]"
             )}
           />
         ))}
       </div>
-      <span className="text-xs text-muted-foreground">
+      <span className="text-xs text-[var(--muted)]">
         Step {current} of {total}
       </span>
     </div>
@@ -107,12 +111,12 @@ function StepHeading({
 }) {
   return (
     <div className="flex flex-col items-center gap-3 text-center">
-      <span className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+      <span className="flex size-11 items-center justify-center rounded-full bg-[var(--indigo-2)] text-[var(--indigo)]">
         <Icon className="size-5" />
       </span>
       <div className="flex flex-col gap-1.5">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">{title}</h1>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <h1 className="text-xl font-medium tracking-[-0.015em] text-[var(--ink)]">{title}</h1>
+        <p className="text-sm text-[var(--muted)]">{description}</p>
       </div>
     </div>
   );
@@ -140,10 +144,10 @@ function WelcomeStep({ userName, onNext }: { userName: string | null | undefined
         />
       </div>
 
-      <Button onClick={onNext} className="w-full gap-1.5">
+      <PrimaryButton onClick={onNext} className="w-full">
         Continue
         <ArrowRight className="size-3.5" />
-      </Button>
+      </PrimaryButton>
     </>
   );
 }
@@ -159,12 +163,12 @@ function ConceptRow({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-foreground">
+      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-[var(--paper-2)] text-[var(--ink)]">
         <Icon className="size-4" />
       </span>
       <div>
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-sm font-medium text-[var(--ink)]">{title}</p>
+        <p className="text-sm text-[var(--ink-2)]">{description}</p>
       </div>
     </div>
   );
@@ -191,31 +195,33 @@ function ApiKeyStep({
         description={`Authenticates requests to your ${environmentName} environment. Copy it now — it won't be shown again.`}
       />
 
-      <div className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2.5">
-        <code className="flex-1 overflow-x-auto font-mono text-xs text-foreground">{apiKey}</code>
-        <Button
+      <div className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--paper-2)] px-3 py-2.5">
+        <code className="flex-1 overflow-x-auto font-[family-name:var(--font-home-mono)] text-xs text-[var(--ink)]">
+          {apiKey}
+        </code>
+        <button
           type="button"
-          variant="ghost"
-          size="icon-sm"
           aria-label="Copy API key"
+          className="text-[var(--indigo)]"
           onClick={() => {
             void navigator.clipboard.writeText(apiKey);
             setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
           }}
         >
           {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-        </Button>
+        </button>
       </div>
 
       <div className="flex gap-2">
-        <Button variant="ghost" onClick={onBack} className="gap-1.5">
+        <GhostButton onClick={onBack}>
           <ArrowLeft className="size-3.5" />
           Back
-        </Button>
-        <Button onClick={onNext} className="flex-1 gap-1.5">
+        </GhostButton>
+        <PrimaryButton onClick={onNext} className="flex-1">
           Continue
           <ArrowRight className="size-3.5" />
-        </Button>
+        </PrimaryButton>
       </div>
     </>
   );
@@ -234,6 +240,8 @@ function QuickStartStep({
   onBack: () => void;
   onFinish: () => void;
 }) {
+  const [tab, setTab] = useState<"sdk" | "mcp">("sdk");
+
   const sdkSnippet = `import { Memora } from "@memora/client";
 
 const memora = new Memora({ apiKey: "${apiKey}" });
@@ -264,41 +272,45 @@ const { results } = await memora.recall({ userId: "alice", query: "how should I 
         description={`Real code for your ${environmentName} environment — the key is already dropped in.`}
       />
 
-      <Tabs defaultValue="sdk">
-        <TabsList>
-          <TabsTrigger value="sdk">SDK</TabsTrigger>
-          <TabsTrigger value="mcp">MCP</TabsTrigger>
-        </TabsList>
-        <TabsContent value="sdk">
-          <div className="overflow-hidden rounded-lg border border-border">
-            <pre className="overflow-x-auto bg-muted px-4 py-3 font-mono text-xs leading-relaxed text-foreground">
-              <code>{sdkSnippet}</code>
-            </pre>
-          </div>
-        </TabsContent>
-        <TabsContent value="mcp">
-          <div className="overflow-hidden rounded-lg border border-border">
-            <pre className="overflow-x-auto bg-muted px-4 py-3 font-mono text-xs leading-relaxed text-foreground">
-              <code>{mcpSnippet}</code>
-            </pre>
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">For Claude Code, Cursor, or any MCP client.</p>
-        </TabsContent>
-      </Tabs>
+      <div>
+        <div role="tablist" className="flex gap-5 border-b border-[var(--line)]">
+          {(["sdk", "mcp"] as const).map((id) => (
+            <button
+              key={id}
+              role="tab"
+              aria-selected={tab === id}
+              onClick={() => setTab(id)}
+              className={cn(
+                "-mb-px border-b-2 pb-2 text-sm font-medium",
+                tab === id ? "border-[var(--ink)] text-[var(--ink)]" : "border-transparent text-[var(--muted)]"
+              )}
+            >
+              {id === "sdk" ? "SDK" : "MCP"}
+            </button>
+          ))}
+        </div>
 
-      <div className="flex gap-2">
-        <Button variant="ghost" onClick={onBack} className="gap-1.5">
-          <ArrowLeft className="size-3.5" />
-          Back
-        </Button>
-        <Button onClick={onFinish} className="flex-1">
-          Go to dashboard
-        </Button>
+        <div className="mt-3 overflow-hidden rounded-lg border border-[var(--line)]">
+          <pre className="overflow-x-auto bg-[var(--paper-2)] px-4 py-3 font-[family-name:var(--font-home-mono)] text-xs leading-relaxed text-[var(--ink)]">
+            <code>{tab === "sdk" ? sdkSnippet : mcpSnippet}</code>
+          </pre>
+        </div>
+        {tab === "mcp" && <p className="mt-2 text-xs text-[var(--muted)]">For Claude Code, Cursor, or any MCP client.</p>}
       </div>
 
-      <Button variant="outline" nativeButton={false} render={<a href={playgroundHref} />}>
+      <div className="flex gap-2">
+        <GhostButton onClick={onBack}>
+          <ArrowLeft className="size-3.5" />
+          Back
+        </GhostButton>
+        <PrimaryButton onClick={onFinish} className="flex-1">
+          Go to dashboard
+        </PrimaryButton>
+      </div>
+
+      <Link href={playgroundHref} className="mx-auto text-sm font-medium text-[var(--muted)] hover:text-[var(--ink)]">
         Or try the Playground first
-      </Button>
+      </Link>
     </>
   );
 }

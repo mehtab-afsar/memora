@@ -6,59 +6,55 @@ import { Mail, Lock } from "lucide-react";
 import { loginAction, googleSignInAction, type LoginState } from "@/features/auth/actions/login";
 import { BrandMark } from "@/components/brand-mark";
 import { GoogleIcon } from "@/components/google-icon";
-import { lpSans, lpMono, LP_VARS, Eyebrow } from "@/features/landing/lib/lp-theme";
+import { PrimaryButton, GhostButton } from "@/features/landing/components/home/buttons";
+import { hanken, dmMono, HOME_VARS } from "@/features/landing/lib/home-tokens";
 
 const initialState: LoginState = {};
 
-const FIELD_ICON_CLASS = "pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--lp-text-tertiary)]";
+const FIELD_ICON_CLASS =
+  "pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--muted)]";
 const FIELD_INPUT_CLASS =
-  "w-full rounded-md border-2 border-[var(--lp-border)] bg-[var(--lp-bg)] py-2.5 pr-3.5 pl-10 text-base text-[var(--lp-text)] outline-none transition-colors placeholder:text-[var(--lp-text-tertiary)] focus:border-[var(--lp-accent)]";
-const FIELD_LABEL_CLASS = "text-sm font-semibold text-[var(--lp-text)]";
+  "w-full rounded-lg border border-[var(--line)] bg-white py-2.5 pr-3.5 pl-10 text-base text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--muted)] focus:border-[var(--indigo)]";
+const FIELD_LABEL_CLASS = "text-sm font-medium text-[var(--ink)]";
 
 export function LoginPage() {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
 
   return (
     <div
-      className={`${lpSans.variable} ${lpMono.variable} flex min-h-screen flex-col bg-[var(--lp-bg)]`}
-      style={{ ...LP_VARS, fontFamily: "var(--font-lp-sans)" }}
+      className={`${hanken.variable} ${dmMono.variable} flex min-h-screen flex-col bg-white text-[var(--ink)]`}
+      style={{ ...HOME_VARS, fontFamily: "var(--font-home-sans)" }}
     >
-      <header className="border-b border-[var(--lp-border)]">
+      <header className="border-b border-[var(--line)]">
         <div className="mx-auto flex h-16 max-w-[1120px] items-center justify-between px-6">
-          <Link href="/" className="flex items-center gap-2 text-[var(--lp-text)]">
-            <BrandMark className="size-6" />
-            <span className="text-base font-bold tracking-tight">MEMORA</span>
+          <Link href="/" className="flex items-center gap-2">
+            <BrandMark className="size-6 text-[var(--indigo)]" />
+            <span className="text-[17px] font-semibold tracking-[0.08em] text-[var(--ink)]">MEMORA</span>
           </Link>
-          <Link href="/signup" className="text-sm font-semibold text-[var(--lp-text-secondary)] hover:text-[var(--lp-text)]">
+          <Link href="/signup" className="text-sm font-medium text-[var(--muted)] hover:text-[var(--ink)]">
             Sign up
           </Link>
         </div>
       </header>
 
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 px-6 py-16">
-        <div className="flex flex-col gap-3 text-center">
-          <Eyebrow>Welcome back</Eyebrow>
-          <h1 className="text-4xl leading-[1.05] font-bold tracking-tighter text-[var(--lp-text)]">Log in</h1>
-          <p className="text-base leading-relaxed text-[var(--lp-text-secondary)]">
-            Pick up right where your agents left off.
-          </p>
+        <div className="flex flex-col gap-2.5 text-center">
+          <h1 className="text-[32px] leading-[1.1] font-medium tracking-[-0.03em]">Log in</h1>
+          <p className="text-base text-[var(--ink-2)]">Pick up right where your agents left off.</p>
         </div>
 
-        <div className="rounded-lg border-2 border-[var(--lp-border)] bg-[var(--lp-bg)] p-8">
+        <div className="rounded-lg border border-[var(--line)] p-8">
           <form action={googleSignInAction}>
-            <button
-              type="submit"
-              className="inline-flex w-full items-center justify-center gap-2.5 rounded-md border-2 border-[var(--lp-border)] bg-[var(--lp-bg)] px-6 py-3 text-base font-semibold text-[var(--lp-text)] transition-colors hover:bg-[var(--lp-border)]/20"
-            >
+            <GhostButton type="submit" className="w-full">
               <GoogleIcon />
               Continue with Google
-            </button>
+            </GhostButton>
           </form>
 
           <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-[var(--lp-border)]" />
-            <span className="text-xs font-semibold text-[var(--lp-text-tertiary)]">OR</span>
-            <div className="h-px flex-1 bg-[var(--lp-border)]" />
+            <div className="h-px flex-1 bg-[var(--line)]" />
+            <span className="text-xs font-medium text-[var(--muted)]">OR</span>
+            <div className="h-px flex-1 bg-[var(--line)]" />
           </div>
 
           <form action={formAction} className="flex flex-col gap-5">
@@ -96,27 +92,20 @@ export function LoginPage() {
               </div>
             </div>
             <div className="-mt-2 text-right">
-              <Link
-                href="/forgot-password"
-                className="text-sm font-semibold text-[var(--lp-text-secondary)] hover:text-[var(--lp-accent)]"
-              >
+              <Link href="/forgot-password" className="text-sm font-medium text-[var(--muted)] hover:text-[var(--indigo)]">
                 Forgot your password?
               </Link>
             </div>
             {state.error && <p className="text-sm font-medium text-red-600">{state.error}</p>}
-            <button
-              type="submit"
-              disabled={pending}
-              className="mt-1 inline-flex items-center justify-center rounded-md bg-[var(--lp-accent)] px-6 py-3.5 text-base font-semibold text-white transition-transform hover:-translate-y-0.5 hover:opacity-90 disabled:pointer-events-none disabled:opacity-60 disabled:hover:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--lp-accent)]"
-            >
+            <PrimaryButton type="submit" disabled={pending} className="mt-1 w-full">
               {pending ? "Logging in..." : "Log in"}
-            </button>
+            </PrimaryButton>
           </form>
         </div>
 
-        <p className="text-center text-sm text-[var(--lp-text-secondary)]">
+        <p className="text-center text-sm text-[var(--ink-2)]">
           No account yet?{" "}
-          <Link href="/signup" className="font-semibold text-[var(--lp-accent)] hover:underline">
+          <Link href="/signup" className="font-medium text-[var(--indigo)] hover:underline">
             Sign up
           </Link>
         </p>
